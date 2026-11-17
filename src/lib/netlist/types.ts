@@ -58,6 +58,8 @@ export const COMPONENT_PREFIX: Record<string, string> = {
 	pnp: 'Q',
 	nmos: 'M',
 	pmos: 'M',
+	nmos_bd: 'M',
+	pmos_bd: 'M',
 	ground: '',  // Ground is not a component, it defines node 0
 };
 
@@ -73,6 +75,8 @@ export const DEFAULT_VALUES: Record<string, string> = {
 	pnp: '2N3906',
 	nmos: 'NMOS',  // No default model in library yet
 	pmos: 'PMOS',  // No default model in library yet
+	nmos_bd: 'PWR_NMOS',
+	pmos_bd: 'PWR_PMOS',
 };
 
 /** Pin order for SPICE netlist (component type -> pin names in order) */
@@ -87,5 +91,7 @@ export const PIN_ORDER: Record<string, string[]> = {
 	pnp: ['C', 'B', 'E'],
 	nmos: ['D', 'G', 'S'],   // Drain, Gate, Source (+ Bulk, often tied to Source)
 	pmos: ['D', 'G', 'S'],
+	nmos_bd: ['D', 'G', 'S'],  // Netlisted as D G S S (bulk tied to source) + body diode
+	pmos_bd: ['D', 'G', 'S'],
 };
 

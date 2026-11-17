@@ -144,6 +144,8 @@ export function generateNetlist(schematic: Schematic, title: string = 'Untitled 
 		const spiceComp = componentToSpice(comp, pinToNet, parameters);
 		if (spiceComp) {
 			result.components.push(spiceComp);
+			const bodyDiode = bodyDiodeFor(comp, spiceComp);
+			if (bodyDiode) result.components.push(bodyDiode);
 		} else {
 			result.errors.push(`Failed to generate SPICE for ${comp.attributes['InstName'] || comp.id}`);
 		}
@@ -166,6 +168,10 @@ export function generateNetlist(schematic: Schematic, title: string = 'Untitled 
 			if (modelName) {
 				referencedModels.add(modelName);
 			}
+		}
+		if (comp.type === 'nmos_bd' || comp.type === 'pmos_bd') {
+			referencedModels.add(comp.attributes['Value'] || DEFAULT_VALUES[comp.type]);
+			referencedModels.add(comp.attributes['BodyDiode'] || DEFAULT_BODY_DIODE);
 		}
 	}
 
@@ -261,11 +267,40 @@ function componentToSpice(
 		};
 	}
 
+	// MOSFETs with body diode: ngspice needs a bulk node, tie it to source
+	if (comp.type === 'nmos_bd' || comp.type === 'pmos_bd') {
+		return {
+			prefix,
+			name: instName,
+			nodes: [...nodes, nodes[2]],
+			value
+		};
+	}
+
 	return {
 		prefix,
 		name: instName,
 		nodes,
 		value
+	};
+}
+
+/** Default SPICE model for the explicit body diode of nmos_bd / pmos_bd */
+const DEFAULT_BODY_DIODE = 'DBODY';
+
+/**
+ * Explicit body diode for MOSFETs drawn with one: source->drain for NMOS,
+ * drain->source for PMOS. Named D<inst>_body so it can be probed separately.
+ */
+function bodyDiodeFor(comp: Component, mos: SpiceComponent): SpiceComponent | null {
+	if (comp.type !== 'nmos_bd' && comp.type !== 'pmos_bd') return null;
+	const [drain, , source] = mos.nodes;
+	return {
+		prefix: 'D',
+		name: `D${mos.name}_body`,
+		nodes: comp.type === 'nmos_bd' ? [source, drain] : [drain, source],
+		value: '',
+		extra: comp.attributes['BodyDiode'] || DEFAULT_BODY_DIODE
 	};
 }
 

@@ -21,6 +21,13 @@ export interface LibraryModel extends SpiceModel {
  * Built-in diode models
  */
 export const DIODE_MODELS: Record<string, LibraryModel> = {
+	'DBODY': {
+		name: 'DBODY',
+		type: 'D',
+		params: 'Is=1e-12 N=1.1 Rs=10m Cjo=300p M=0.5 tt=50n BV=60 IBV=10u',
+		description: 'Generic power MOSFET body diode',
+		category: 'diode'
+	},
 	'1N4148': {
 		name: '1N4148',
 		type: 'D',
@@ -93,11 +100,33 @@ export const BJT_MODELS: Record<string, LibraryModel> = {
 };
 
 /**
+ * Built-in MOSFET models (simple level 1, roughly a small power MOSFET)
+ */
+export const MOSFET_MODELS: Record<string, LibraryModel> = {
+	'PWR_NMOS': {
+		name: 'PWR_NMOS',
+		type: 'NMOS',
+		// Is=0 / Cbd=0: the body diode is a separate DBODY element in the netlist
+		params: 'Level=1 Vto=3 Kp=20 Lambda=0.01 Rd=10m Rs=10m Cgso=1n Cgdo=200p Cbd=0 Cbs=0 Is=0',
+		description: 'Generic N-channel power MOSFET (Vth 3V, ~20mOhm)',
+		category: 'mosfet'
+	},
+	'PWR_PMOS': {
+		name: 'PWR_PMOS',
+		type: 'PMOS',
+		params: 'Level=1 Vto=-3 Kp=10 Lambda=0.01 Rd=20m Rs=20m Cgso=1n Cgdo=200p Cbd=0 Cbs=0 Is=0',
+		description: 'Generic P-channel power MOSFET (Vth -3V, ~40mOhm)',
+		category: 'mosfet'
+	}
+};
+
+/**
  * All models combined
  */
 export const ALL_MODELS: Record<string, LibraryModel> = {
 	...DIODE_MODELS,
-	...BJT_MODELS
+	...BJT_MODELS,
+	...MOSFET_MODELS
 };
 
 /**

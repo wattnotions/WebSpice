@@ -52,6 +52,8 @@
 							<tr><td><kbd>Shift+Q</kbd></td><td>Place PNP transistor</td></tr>
 							<tr><td><kbd>M</kbd></td><td>Place NMOS transistor</td></tr>
 							<tr><td><kbd>Shift+M</kbd></td><td>Place PMOS transistor</td></tr>
+							<tr><td><kbd>B</kbd></td><td>Place NMOS with body diode</td></tr>
+							<tr><td><kbd>Shift+B</kbd></td><td>Place PMOS with body diode</td></tr>
 						</tbody>
 					</table>
 				</section>

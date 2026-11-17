@@ -5,9 +5,10 @@
  */
 
 import type { ComponentType, Pin } from './types';
+import { KICAD_SYMBOLS } from './kicad-symbols.generated';
 
 /** Drawing command types */
-type DrawCmd = 
+export type DrawCmd =
 	| { type: 'M'; x: number; y: number }      // Move to
 	| { type: 'L'; x: number; y: number }      // Line to
 	| { type: 'A'; cx: number; cy: number; r: number; start: number; end: number }  // Arc
@@ -21,11 +22,36 @@ export interface ComponentDef {
 	name: string;
 	shortcut: string;  // Keyboard shortcut
 	paths: DrawCmd[][];  // Multiple paths for different stroke styles
+	filled?: DrawCmd[][];  // Paths drawn filled (arrowheads, diode triangles, dots)
 	pins: Omit<Pin, 'id'>[];  // Pin positions relative to origin
 	labelOffset: { x: number; y: number };  // Where to draw the label
 	valueOffset: { x: number; y: number };  // Where to draw the value
 	width: number;   // Bounding box
 	height: number;
+}
+
+/** Drawing geometry produced by scripts/import-kicad-symbol.ts */
+export interface SymbolGeometry {
+	source: string;       // KiCad library:symbol it came from
+	description: string;
+	paths: DrawCmd[][];
+	filled: DrawCmd[][];
+	pins: Omit<Pin, 'id'>[];
+	labelOffset: { x: number; y: number };
+	valueOffset: { x: number; y: number };
+	width: number;
+	height: number;
+}
+
+/** Build a ComponentDef from an imported KiCad symbol */
+function fromKicad(
+	geom: SymbolGeometry,
+	type: ComponentType,
+	name: string,
+	shortcut: string
+): ComponentDef {
+	const { paths, filled, pins, labelOffset, valueOffset, width, height } = geom;
+	return { type, name, shortcut, paths, filled, pins, labelOffset, valueOffset, width, height };
 }
 
 // Resistor: zigzag pattern
@@ -371,6 +397,11 @@ const PMOS: ComponentDef = {
 	height: 60
 };
 
+// MOSFETs with body diode, drawn from KiCad's Device:Q_NMOS / Device:Q_PMOS
+// (regenerate with `pnpm symbols:import`)
+const NMOS_BD = fromKicad(KICAD_SYMBOLS.nmos_bd, 'nmos_bd', 'NMOS (body diode)', 'b');
+const PMOS_BD = fromKicad(KICAD_SYMBOLS.pmos_bd, 'pmos_bd', 'PMOS (body diode)', 'B');
+
 // Export all component definitions
 export const COMPONENT_DEFS: Record<ComponentType, ComponentDef> = {
 	resistor: RESISTOR,
@@ -384,14 +415,17 @@ export const COMPONENT_DEFS: Record<ComponentType, ComponentDef> = {
 	pnp: PNP,
 	nmos: NMOS,
 	pmos: PMOS,
+	nmos_bd: NMOS_BD,
+	pmos_bd: PMOS_BD,
 };
 
 // Get component def by shortcut key
+// Exact match first so Shift+key can pick a different part (Q/Shift+Q, M/Shift+M),
+// then fall back to the lowercase shortcut (e.g. Caps Lock on).
 export function getComponentByShortcut(key: string): ComponentDef | null {
-	const lowerKey = key.toLowerCase();
-	for (const def of Object.values(COMPONENT_DEFS)) {
-		if (def.shortcut === lowerKey) return def;
-	}
-	return null;
+	const defs = Object.values(COMPONENT_DEFS);
+	return defs.find(def => def.shortcut === key)
+		?? defs.find(def => def.shortcut === key.toLowerCase())
+		?? null;
 }
 

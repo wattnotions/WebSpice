@@ -22,7 +22,8 @@ A browser-based SPICE circuit simulator with a minimal GUI. Runs entirely client
 
 | Key | Function |
 |-----|----------|
-| R, C, L, V, I, G, D, Q, M | Place component |
+| R, C, L, V, I, G, D, Q, M | Place component (Shift+Q: PNP, Shift+M: PMOS) |
+| B, Shift+B | Place NMOS / PMOS with body diode |
 | W or 3 | Wire mode |
 | 5 | Delete mode |
 | 6 | Duplicate mode |

@@ -61,7 +61,7 @@
 	}
 
 	function needsModel(type: string): boolean {
-		return ['diode', 'npn', 'pnp', 'nmos', 'pmos'].includes(type);
+		return ['diode', 'npn', 'pnp', 'nmos', 'pmos', 'nmos_bd', 'pmos_bd'].includes(type);
 	}
 
 	function getTypeLabel(type: string): string {
@@ -76,6 +76,8 @@
 			case 'pnp': return 'PNP Transistor';
 			case 'nmos': return 'NMOS Transistor';
 			case 'pmos': return 'PMOS Transistor';
+			case 'nmos_bd': return 'NMOS Transistor (body diode)';
+			case 'pmos_bd': return 'PMOS Transistor (body diode)';
 			case 'ground': return 'Ground';
 			default: return type;
 		}
@@ -96,6 +98,8 @@
 			case 'diode': return 'e.g., 1N4148, 1N4001, LED_RED';
 			case 'npn': return 'e.g., 2N2222, 2N3904';
 			case 'pnp': return 'e.g., 2N3906';
+			case 'nmos_bd': return 'e.g., PWR_NMOS';
+			case 'pmos_bd': return 'e.g., PWR_PMOS';
 			default: return '';
 		}
 	}

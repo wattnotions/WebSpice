@@ -70,7 +70,8 @@ export type Rotation = 0 | 90 | 180 | 270;
 export type ComponentType = 
 	| 'resistor' | 'capacitor' | 'inductor'
 	| 'voltage' | 'current' | 'ground'
-	| 'diode' | 'npn' | 'pnp' | 'nmos' | 'pmos';
+	| 'diode' | 'npn' | 'pnp' | 'nmos' | 'pmos'
+	| 'nmos_bd' | 'pmos_bd';  // MOSFETs with body diode (symbols imported from KiCad)
 
 /** Pin on a component */
 export interface Pin {

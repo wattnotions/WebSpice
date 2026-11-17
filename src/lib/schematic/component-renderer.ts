@@ -57,6 +57,16 @@ export function renderComponent(
 		ctx.stroke();
 	}
 
+	// Draw filled shapes (arrowheads, diode triangles, junction dots)
+	for (const path of def.filled ?? []) {
+		ctx.beginPath();
+		for (const cmd of path) {
+			drawCommand(ctx, cmd);
+		}
+		ctx.fill();
+		ctx.stroke();
+	}
+
 	// Draw pins (small circles)
 	ctx.fillStyle = isGhost ? `${COLORS.pin}80` : COLORS.pin;
 	for (const pin of def.pins) {

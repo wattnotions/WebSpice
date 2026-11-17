@@ -422,6 +422,8 @@ function getDefaultValue(type: string): string {
 		case 'diode': return 'D';
 		case 'npn': case 'pnp': return '2N2222';
 		case 'nmos': case 'pmos': return 'NMOS';
+		case 'nmos_bd': return 'PWR_NMOS';
+		case 'pmos_bd': return 'PWR_PMOS';
 		default: return '';
 	}
 }
