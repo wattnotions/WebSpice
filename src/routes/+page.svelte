@@ -24,7 +24,7 @@
 	let waveformTabs = $state<WaveformTab[]>([{ id: 'default', name: 'Plot 1', traces: [] }]);
 	let activeTabId = $state('default');
 
-	let netlistCollapsed = $state(false);
+	let netlistCollapsed = $state(true);  // Netlist panel starts collapsed; click ▶ to expand
 	let schematicCollapsed = $state(false);
 	let waveformCollapsed = $state(false);
 
