@@ -5,7 +5,7 @@
 	import { TabbedWaveformViewer, type TraceData, type WaveformTab, getTraceColor, processAcResults } from '$lib/waveform';
 	import { NetlistEditor } from '$lib/editor';
 	import { SchematicCanvas, type Schematic, type Probe, type Component, type TextComment } from '$lib/schematic';
-	import { ResizablePanel, HelpModal, LandingPage, DirectiveModal, ComponentEditModal, CommentEditModal } from '$lib/components';
+	import { ResizablePanel, HelpModal, LandingPage, DirectiveModal, ComponentEditModal, CommentEditModal, MenuBar, type Menu } from '$lib/components';
 	import { schematicToNetlist, generateNodeLabels, calculateComponentCurrent } from '$lib/netlist';
 
 	let status = $state('Not initialized');
@@ -355,6 +355,35 @@ Vin in 0 PULSE(0 5 0 1n 1n 0.5m 1m)
 		status = `Generated netlist: ${schematic.components.length} components, ${schematic.wires.length} wires, ${schematic.nodeLabels.length} nodes`;
 	}
 
+	/** Top menu bar. Shortcuts shown here are handled in handleKeyDown below. */
+	const menus: Menu[] = $derived([
+		{
+			label: 'File',
+			items: [
+				{ label: 'Open…', shortcut: 'Ctrl+O', action: openSchematicDialog },
+				{
+					label: 'Save',
+					shortcut: 'Ctrl+S',
+					action: saveSchematic,
+					disabled: schematic.components.length === 0 && schematic.wires.length === 0
+				},
+				'separator',
+				{
+					label: 'Generate Netlist',
+					shortcut: 'Ctrl+N',
+					action: generateNetlistFromSchematic,
+					disabled: schematic.components.length === 0
+				},
+				{
+					label: 'Run Simulation',
+					shortcut: 'Ctrl+B',
+					action: runSim,
+					disabled: status.includes('Initializing') || status.includes('Running')
+				}
+			]
+		}
+	]);
+
 	function handleKeyDown(e: KeyboardEvent) {
 		// Don't handle shortcuts if typing in a text input
 		const target = e.target as HTMLElement;
@@ -615,19 +644,7 @@ Vin in 0 PULSE(0 5 0 1n 1n 0.5m 1m)
 	{:else}
 		<header class="toolbar">
 			<span class="app-title" onclick={returnToLanding} title="Return to landing page" role="button" tabindex="0" onkeydown={(e) => e.key === 'Enter' && returnToLanding()}>WebSpice</span>
-			<button onclick={openSchematicDialog} title="Open schematic file">
-				Open (Ctrl+O)
-			</button>
-			<button onclick={saveSchematic} disabled={schematic.components.length === 0 && schematic.wires.length === 0} title="Save schematic to file">
-				Save (Ctrl+S)
-			</button>
-			<span class="toolbar-separator"></span>
-			<button onclick={generateNetlistFromSchematic} disabled={schematic.components.length === 0}>
-				Generate Netlist (Ctrl+N)
-			</button>
-			<button onclick={runSim} disabled={status.includes('Initializing') || status.includes('Running')}>
-				Run Simulation (Ctrl+B)
-			</button>
+			<MenuBar {menus} />
 			{#if getTotalTraceCount() > 0}
 				<span class="trace-count">{getTotalTraceCount()} traces</span>
 			{/if}
@@ -758,12 +775,6 @@ Vin in 0 PULSE(0 5 0 1n 1n 0.5m 1m)
 
 	.app-title:hover {
 		opacity: 0.8;
-	}
-
-	.toolbar-separator {
-		width: 1px;
-		height: 20px;
-		background: var(--border-primary);
 	}
 
 	.toolbar-spacer {

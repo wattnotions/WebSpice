@@ -9,3 +9,4 @@ export { default as DirectiveModal } from './DirectiveModal.svelte';
 export { default as ComponentEditModal } from './ComponentEditModal.svelte';
 export { default as SourceEditModal } from './SourceEditModal.svelte';
 export { default as CommentEditModal } from './CommentEditModal.svelte';
+export { default as MenuBar, type Menu, type MenuItem } from './MenuBar.svelte';
