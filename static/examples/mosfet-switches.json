@@ -1,0 +1,481 @@
+{
+  "version": 1,
+  "schematic": {
+    "components": [
+      {
+        "id": "ms-v1",
+        "type": "voltage",
+        "x": -300,
+        "y": -120,
+        "rotation": 0,
+        "mirror": false,
+        "attributes": {
+          "InstName": "V1",
+          "Value": "DC 12"
+        },
+        "pins": [
+          {
+            "x": 0,
+            "y": -40,
+            "name": "+",
+            "id": "0"
+          },
+          {
+            "x": 0,
+            "y": 40,
+            "name": "-",
+            "id": "1"
+          }
+        ]
+      },
+      {
+        "id": "ms-g1",
+        "type": "ground",
+        "x": -300,
+        "y": -70,
+        "rotation": 0,
+        "mirror": false,
+        "attributes": {
+          "InstName": "",
+          "Value": ""
+        },
+        "pins": [
+          {
+            "x": 0,
+            "y": -10,
+            "name": "0",
+            "id": "0"
+          }
+        ]
+      },
+      {
+        "id": "ms-r1",
+        "type": "resistor",
+        "x": 0,
+        "y": -130,
+        "rotation": 0,
+        "mirror": false,
+        "attributes": {
+          "InstName": "R1",
+          "Value": "100"
+        },
+        "pins": [
+          {
+            "x": 0,
+            "y": -30,
+            "name": "1",
+            "id": "0"
+          },
+          {
+            "x": 0,
+            "y": 30,
+            "name": "2",
+            "id": "1"
+          }
+        ]
+      },
+      {
+        "id": "ms-m1",
+        "type": "nmos_bd",
+        "x": -20,
+        "y": -60,
+        "rotation": 0,
+        "mirror": false,
+        "attributes": {
+          "InstName": "M1",
+          "Value": "PWR_NMOS"
+        },
+        "pins": [
+          {
+            "x": 20,
+            "y": -40,
+            "name": "D",
+            "id": "0"
+          },
+          {
+            "x": -40,
+            "y": 0,
+            "name": "G",
+            "id": "1"
+          },
+          {
+            "x": 20,
+            "y": 40,
+            "name": "S",
+            "id": "2"
+          }
+        ]
+      },
+      {
+        "id": "ms-g2",
+        "type": "ground",
+        "x": 0,
+        "y": -10,
+        "rotation": 0,
+        "mirror": false,
+        "attributes": {
+          "InstName": "",
+          "Value": ""
+        },
+        "pins": [
+          {
+            "x": 0,
+            "y": -10,
+            "name": "0",
+            "id": "0"
+          }
+        ]
+      },
+      {
+        "id": "ms-v2",
+        "type": "voltage",
+        "x": -140,
+        "y": -20,
+        "rotation": 0,
+        "mirror": false,
+        "attributes": {
+          "InstName": "V2",
+          "Value": "PULSE(0 5 0 1u 1u 0.5m 1m)"
+        },
+        "pins": [
+          {
+            "x": 0,
+            "y": -40,
+            "name": "+",
+            "id": "0"
+          },
+          {
+            "x": 0,
+            "y": 40,
+            "name": "-",
+            "id": "1"
+          }
+        ]
+      },
+      {
+        "id": "ms-g3",
+        "type": "ground",
+        "x": -140,
+        "y": 30,
+        "rotation": 0,
+        "mirror": false,
+        "attributes": {
+          "InstName": "",
+          "Value": ""
+        },
+        "pins": [
+          {
+            "x": 0,
+            "y": -10,
+            "name": "0",
+            "id": "0"
+          }
+        ]
+      },
+      {
+        "id": "ms-m2",
+        "type": "pmos_bd",
+        "x": 280,
+        "y": -120,
+        "rotation": 180,
+        "mirror": true,
+        "attributes": {
+          "InstName": "M2",
+          "Value": "PWR_PMOS"
+        },
+        "pins": [
+          {
+            "x": 20,
+            "y": -40,
+            "name": "D",
+            "id": "0"
+          },
+          {
+            "x": -40,
+            "y": 0,
+            "name": "G",
+            "id": "1"
+          },
+          {
+            "x": 20,
+            "y": 40,
+            "name": "S",
+            "id": "2"
+          }
+        ]
+      },
+      {
+        "id": "ms-r3",
+        "type": "resistor",
+        "x": 300,
+        "y": -50,
+        "rotation": 0,
+        "mirror": false,
+        "attributes": {
+          "InstName": "R3",
+          "Value": "100"
+        },
+        "pins": [
+          {
+            "x": 0,
+            "y": -30,
+            "name": "1",
+            "id": "0"
+          },
+          {
+            "x": 0,
+            "y": 30,
+            "name": "2",
+            "id": "1"
+          }
+        ]
+      },
+      {
+        "id": "ms-g4",
+        "type": "ground",
+        "x": 300,
+        "y": -10,
+        "rotation": 0,
+        "mirror": false,
+        "attributes": {
+          "InstName": "",
+          "Value": ""
+        },
+        "pins": [
+          {
+            "x": 0,
+            "y": -10,
+            "name": "0",
+            "id": "0"
+          }
+        ]
+      },
+      {
+        "id": "ms-r2",
+        "type": "resistor",
+        "x": 200,
+        "y": -170,
+        "rotation": 0,
+        "mirror": false,
+        "attributes": {
+          "InstName": "R2",
+          "Value": "10k"
+        },
+        "pins": [
+          {
+            "x": 0,
+            "y": -30,
+            "name": "1",
+            "id": "0"
+          },
+          {
+            "x": 0,
+            "y": 30,
+            "name": "2",
+            "id": "1"
+          }
+        ]
+      },
+      {
+        "id": "ms-m3",
+        "type": "nmos_bd",
+        "x": 180,
+        "y": -80,
+        "rotation": 0,
+        "mirror": false,
+        "attributes": {
+          "InstName": "M3",
+          "Value": "PWR_NMOS"
+        },
+        "pins": [
+          {
+            "x": 20,
+            "y": -40,
+            "name": "D",
+            "id": "0"
+          },
+          {
+            "x": -40,
+            "y": 0,
+            "name": "G",
+            "id": "1"
+          },
+          {
+            "x": 20,
+            "y": 40,
+            "name": "S",
+            "id": "2"
+          }
+        ]
+      },
+      {
+        "id": "ms-g5",
+        "type": "ground",
+        "x": 200,
+        "y": -30,
+        "rotation": 0,
+        "mirror": false,
+        "attributes": {
+          "InstName": "",
+          "Value": ""
+        },
+        "pins": [
+          {
+            "x": 0,
+            "y": -10,
+            "name": "0",
+            "id": "0"
+          }
+        ]
+      },
+      {
+        "id": "ms-v3",
+        "type": "voltage",
+        "x": 80,
+        "y": -40,
+        "rotation": 0,
+        "mirror": false,
+        "attributes": {
+          "InstName": "V3",
+          "Value": "PULSE(0 5 0.25m 1u 1u 0.5m 1m)"
+        },
+        "pins": [
+          {
+            "x": 0,
+            "y": -40,
+            "name": "+",
+            "id": "0"
+          },
+          {
+            "x": 0,
+            "y": 40,
+            "name": "-",
+            "id": "1"
+          }
+        ]
+      },
+      {
+        "id": "ms-g6",
+        "type": "ground",
+        "x": 80,
+        "y": 10,
+        "rotation": 0,
+        "mirror": false,
+        "attributes": {
+          "InstName": "",
+          "Value": ""
+        },
+        "pins": [
+          {
+            "x": 0,
+            "y": -10,
+            "name": "0",
+            "id": "0"
+          }
+        ]
+      }
+    ],
+    "wires": [
+      {
+        "id": "ms-w1",
+        "x1": -300,
+        "y1": -160,
+        "x2": -300,
+        "y2": -200
+      },
+      {
+        "id": "ms-w2",
+        "x1": -300,
+        "y1": -200,
+        "x2": 0,
+        "y2": -200
+      },
+      {
+        "id": "ms-w3",
+        "x1": 0,
+        "y1": -200,
+        "x2": 200,
+        "y2": -200
+      },
+      {
+        "id": "ms-w4",
+        "x1": 200,
+        "y1": -200,
+        "x2": 300,
+        "y2": -200
+      },
+      {
+        "id": "ms-w5",
+        "x1": 0,
+        "y1": -200,
+        "x2": 0,
+        "y2": -160
+      },
+      {
+        "id": "ms-w6",
+        "x1": 300,
+        "y1": -200,
+        "x2": 300,
+        "y2": -160
+      },
+      {
+        "id": "ms-w7",
+        "x1": -140,
+        "y1": -60,
+        "x2": -60,
+        "y2": -60
+      },
+      {
+        "id": "ms-w8",
+        "x1": 200,
+        "y1": -140,
+        "x2": 200,
+        "y2": -120
+      },
+      {
+        "id": "ms-w9",
+        "x1": 200,
+        "y1": -120,
+        "x2": 240,
+        "y2": -120
+      },
+      {
+        "id": "ms-w10",
+        "x1": 80,
+        "y1": -80,
+        "x2": 140,
+        "y2": -80
+      }
+    ],
+    "junctions": [
+      {
+        "id": "ms-j1",
+        "x": 0,
+        "y": -200
+      },
+      {
+        "id": "ms-j2",
+        "x": 200,
+        "y": -200
+      },
+      {
+        "id": "ms-j3",
+        "x": 200,
+        "y": -120
+      }
+    ],
+    "directives": [
+      {
+        "id": "ms-tran",
+        "type": "tran",
+        "text": ".tran 1u 3m",
+        "x": -320,
+        "y": 60
+      }
+    ],
+    "parameters": {},
+    "models": []
+  },
+  "netlist": "* MOSFET Switches (low-side NMOS, high-side PMOS)\n* Left: M1 is a low-side switch. 5 V on its gate turns it on and pulls the\n*   bottom of load R1 to ground, so R1 gets the full 12 V.\n* Right: M2 is a high-side switch with its source on the 12 V rail. R2 holds its\n*   gate at 12 V (off). When V3 drives M3 on, M3 pulls M2's gate to 0 V\n*   (Vgs = -12 V), M2 turns on and load R3 is connected to 12 V.\n* M1-M3 include body diodes (D...body lines below).\n\nV1 1 0 DC 12\nR1 1 5 100\nM1 5 2 0 0 PWR_NMOS\nDM1_body 0 5  DBODY\nV2 2 0 PULSE(0 5 0 1u 1u 0.5m 1m)\nM2 6 3 1 1 PWR_PMOS\nDM2_body 6 1  DBODY\nR3 6 0 100\nR2 1 3 10k\nM3 3 4 0 0 PWR_NMOS\nDM3_body 0 3  DBODY\nV3 4 0 PULSE(0 5 0.25m 1u 1u 0.5m 1m)\n\n.model PWR_NMOS NMOS(Level=1 Vto=3 Kp=20 Lambda=0.01 Rd=10m Rs=10m Cgso=1n Cgdo=200p Cbd=0 Cbs=0 Is=0)\n.model DBODY D(Is=1e-12 N=1.1 Rs=10m Cjo=300p M=0.5 tt=50n BV=60 IBV=10u)\n.model PWR_PMOS PMOS(Level=1 Vto=-3 Kp=10 Lambda=0.01 Rd=20m Rs=20m Cgso=1n Cgdo=200p Cbd=0 Cbs=0 Is=0)\n.tran 1u 3m\n.end",
+  "savedAt": "2026-11-17T00:00:00.000Z"
+}

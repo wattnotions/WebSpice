@@ -80,7 +80,15 @@
       "schematicFile": "/examples/coupled-lc-resonators.json",
       "netlistFile": null,
       "previewImage": "/previewImage/coupled-LC.png"
+    },
+    {
+      "id": "mosfet-switches",
+      "name": "MOSFET Switches",
+      "description": "Low-side NMOS and high-side PMOS load switches driven from 5 V logic",
+      "category": "switching",
+      "schematicFile": "/examples/mosfet-switches.json",
+      "netlistFile": null,
+      "previewImage": "/previewImage/mosfet-switches.png"
     }
   ]
 }
-
