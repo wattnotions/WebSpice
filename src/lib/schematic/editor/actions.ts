@@ -12,6 +12,7 @@ export interface SelectionTarget {
 	componentId?: string;
 	wireId?: string;
 	directiveId?: string;
+	commentId?: string;
 }
 
 /**
@@ -22,6 +23,7 @@ export interface DeleteTarget {
 	wireIds: string[];
 	junctionIds: string[];
 	directiveIds: string[];
+	commentIds?: string[];
 }
 
 /**
@@ -38,7 +40,7 @@ export type EditorAction =
 	| { type: 'UPDATE_MOUSE_POS'; screenPos: Point; schematicPos: Point }
 
 	// Mode actions
-	| { type: 'SET_MODE'; mode: 'select' | 'wire' | 'delete' | 'duplicate' | 'move' | 'probe' }
+	| { type: 'SET_MODE'; mode: 'select' | 'wire' | 'delete' | 'duplicate' | 'move' | 'probe' | 'comment' }
 	| { type: 'START_PLACING'; componentType: ComponentType }
 	| { type: 'CANCEL' }
 
@@ -72,7 +74,7 @@ export type EditorAction =
 	| { type: 'END_VIEW_DRAG' }
 
 	// Duplicate action
-	| { type: 'DUPLICATE_AT'; pos: Point; componentId?: string; wireId?: string }
+	| { type: 'DUPLICATE_AT'; pos: Point; componentId?: string; wireId?: string; commentId?: string }
 
 	// Probe actions
 	| { type: 'PROBE_START'; pos: Point; nodeName: string | null; componentId?: string }

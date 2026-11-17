@@ -29,6 +29,7 @@ A browser-based SPICE circuit simulator with a minimal GUI. Runs entirely client
 | 6 | Duplicate mode |
 | 7 | Move mode |
 | P | Probe mode |
+| T | Place text comment (double-click to edit) |
 | Ctrl+R | Rotate selected |
 | Ctrl+E | Mirror selected |
 | Ctrl+N | Generate netlist |

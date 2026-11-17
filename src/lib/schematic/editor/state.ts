@@ -12,6 +12,7 @@ export interface SelectionState {
 	componentIds: Set<string>;
 	wireIds: Set<string>;
 	directiveIds: Set<string>;
+	commentIds: Set<string>;
 }
 
 /**
@@ -22,6 +23,7 @@ export type ModeState =
 	| { type: 'idle' }
 	| { type: 'delete' }
 	| { type: 'duplicate' }
+	| { type: 'placing-comment' }
 	| { type: 'placing'; componentType: ComponentType; rotation: Rotation; mirror: boolean }
 	| { type: 'drawing-wire'; startPoint: Point; direction: WireDirection }
 	| { type: 'moving'; startPos: Point }
@@ -70,7 +72,8 @@ export function createInitialEditorState(): EditorState {
 		selection: {
 			componentIds: new Set(),
 			wireIds: new Set(),
-			directiveIds: new Set()
+			directiveIds: new Set(),
+			commentIds: new Set()
 		},
 		modeState: { type: 'idle' },
 		componentCounters: {}
@@ -96,6 +99,8 @@ export function getEditorMode(modeState: ModeState): string {
 			return 'move';
 		case 'probing':
 			return 'probe';
+		case 'placing-comment':
+			return 'comment';
 		case 'dragging-view':
 			return 'select'; // Dragging view is a sub-state of select
 		default:
@@ -109,7 +114,8 @@ export function getEditorMode(modeState: ModeState): string {
 export function hasSelection(selection: SelectionState): boolean {
 	return selection.componentIds.size > 0 ||
 		selection.wireIds.size > 0 ||
-		selection.directiveIds.size > 0;
+		selection.directiveIds.size > 0 ||
+		selection.commentIds.size > 0;
 }
 
 /**
@@ -118,7 +124,8 @@ export function hasSelection(selection: SelectionState): boolean {
 export function getSelectionCount(selection: SelectionState): number {
 	return selection.componentIds.size +
 		selection.wireIds.size +
-		selection.directiveIds.size;
+		selection.directiveIds.size +
+		selection.commentIds.size;
 }
 
 /**
@@ -128,7 +135,8 @@ export function emptySelection(): SelectionState {
 	return {
 		componentIds: new Set(),
 		wireIds: new Set(),
-		directiveIds: new Set()
+		directiveIds: new Set(),
+		commentIds: new Set()
 	};
 }
 

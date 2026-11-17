@@ -39,7 +39,8 @@ export type EditorMode =
 	| 'duplicate' // 6: Duplicate selected items
 	| 'move'      // 7: Move selected items
 	| 'place'     // Placing a component
-	| 'probe';    // P: Voltage/current probe mode
+	| 'probe'     // P: Voltage/current probe mode
+	| 'comment';  // T: Place a text comment
 
 /** Mouse/interaction state */
 export interface InteractionState {
@@ -124,6 +125,14 @@ export interface SpiceDirective {
 	y?: number;
 }
 
+/** Free text comment on the canvas (documentation only, never in the netlist) */
+export interface TextComment {
+	id: string;
+	x: number;              // Top-left of the text, schematic units
+	y: number;
+	text: string;           // May contain newlines
+}
+
 /** SPICE model definition */
 export interface SpiceModel {
 	name: string;           // Model name (e.g., "D1N4148")
@@ -141,6 +150,7 @@ export interface Schematic {
 	directives?: SpiceDirective[];  // SPICE directives (.tran, .ac, etc.)
 	parameters?: Record<string, string>;  // .param definitions (name -> value)
 	models?: SpiceModel[];  // .model definitions
+	comments?: TextComment[];  // Text comments drawn on the canvas
 }
 
 /** Node label for display on schematic */
@@ -213,6 +223,7 @@ export function getModeName(mode: EditorMode): string {
 		case 'move': return 'Move (7)';
 		case 'place': return 'Place';
 		case 'probe': return 'Probe (P)';
+		case 'comment': return 'Comment (T)';
 		default: return mode;
 	}
 }

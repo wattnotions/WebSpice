@@ -67,6 +67,7 @@
 							<tr><td><kbd>6</kbd></td><td>Duplicate mode (click to copy)</td></tr>
 							<tr><td><kbd>7</kbd></td><td>Move mode (drag to move)</td></tr>
 							<tr><td><kbd>P</kbd></td><td>Probe mode (measure voltage/current)</td></tr>
+							<tr><td><kbd>T</kbd></td><td>Place a text comment (double-click a comment to edit)</td></tr>
 							<tr><td><kbd>Esc</kbd></td><td>Cancel operation / return to select mode</td></tr>
 						</tbody>
 					</table>

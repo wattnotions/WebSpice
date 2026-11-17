@@ -7,4 +7,5 @@ export * from './geometry';
 export * from './hit-testing';
 export * from './probes';
 export * from './drawing';
+export * from './comments';
 

@@ -3,7 +3,7 @@
  * Takes current state and action, returns new state
  */
 
-import type { Schematic, Component, Wire, Junction, Point } from '../types';
+import type { Schematic, Component, Wire, Junction, Point, TextComment } from '../types';
 import type { EditorState, SelectionState, ModeState } from './state';
 import type { EditorAction, DeleteTarget } from './actions';
 import { emptySelection } from './state';
@@ -23,9 +23,12 @@ export type SchematicMutation =
 	| { type: 'DELETE_WIRES'; ids: string[] }
 	| { type: 'DELETE_JUNCTIONS'; ids: string[] }
 	| { type: 'DELETE_DIRECTIVES'; ids: string[] }
+	| { type: 'ADD_COMMENT'; comment: TextComment }
+	| { type: 'DELETE_COMMENTS'; ids: string[] }
 	| { type: 'MOVE_COMPONENTS'; ids: string[]; delta: Point }
 	| { type: 'MOVE_WIRES'; ids: string[]; delta: Point }
 	| { type: 'MOVE_DIRECTIVES'; ids: string[]; delta: Point }
+	| { type: 'MOVE_COMMENTS'; ids: string[]; delta: Point }
 	| { type: 'ROTATE_COMPONENTS'; ids: string[] }
 	| { type: 'MIRROR_COMPONENTS'; ids: string[] };
 
@@ -240,7 +243,7 @@ export function editorReducer(
 
 		// Duplicate
 		case 'DUPLICATE_AT':
-			return handleDuplicateAt(state, action.pos, schematic, action.componentId, action.wireId);
+			return handleDuplicateAt(state, action.pos, schematic, action.componentId, action.wireId, action.commentId);
 
 		// Probe actions
 		case 'PROBE_START':
@@ -296,6 +299,8 @@ function getModeStateForMode(mode: string): ModeState {
 			return { type: 'delete' };
 		case 'duplicate':
 			return { type: 'duplicate' };
+		case 'comment':
+			return { type: 'placing-comment' };
 		default:
 			return { type: 'idle' };
 	}
@@ -303,7 +308,7 @@ function getModeStateForMode(mode: string): ModeState {
 
 function handleSelect(
 	state: EditorState,
-	target: { componentId?: string; wireId?: string; directiveId?: string },
+	target: { componentId?: string; wireId?: string; directiveId?: string; commentId?: string },
 	additive: boolean
 ): ReducerResult {
 	let newSelection: SelectionState;
@@ -312,7 +317,8 @@ function handleSelect(
 		newSelection = {
 			componentIds: new Set(state.selection.componentIds),
 			wireIds: new Set(state.selection.wireIds),
-			directiveIds: new Set(state.selection.directiveIds)
+			directiveIds: new Set(state.selection.directiveIds),
+			commentIds: new Set(state.selection.commentIds)
 		};
 		if (target.componentId) {
 			if (newSelection.componentIds.has(target.componentId)) {
@@ -335,11 +341,19 @@ function handleSelect(
 				newSelection.directiveIds.add(target.directiveId);
 			}
 		}
+		if (target.commentId) {
+			if (newSelection.commentIds.has(target.commentId)) {
+				newSelection.commentIds.delete(target.commentId);
+			} else {
+				newSelection.commentIds.add(target.commentId);
+			}
+		}
 	} else {
 		newSelection = {
 			componentIds: target.componentId ? new Set([target.componentId]) : new Set(),
 			wireIds: target.wireId ? new Set([target.wireId]) : new Set(),
-			directiveIds: target.directiveId ? new Set([target.directiveId]) : new Set()
+			directiveIds: target.directiveId ? new Set([target.directiveId]) : new Set(),
+			commentIds: target.commentId ? new Set([target.commentId]) : new Set()
 		};
 	}
 
@@ -455,6 +469,9 @@ function handleDeleteSelected(state: EditorState): ReducerResult {
 	if (state.selection.directiveIds.size > 0) {
 		mutations.push({ type: 'DELETE_DIRECTIVES', ids: Array.from(state.selection.directiveIds) });
 	}
+	if (state.selection.commentIds.size > 0) {
+		mutations.push({ type: 'DELETE_COMMENTS', ids: Array.from(state.selection.commentIds) });
+	}
 	return {
 		state: { ...state, selection: emptySelection() },
 		mutations
@@ -474,6 +491,9 @@ function handleDeleteAt(state: EditorState, target: DeleteTarget): ReducerResult
 	}
 	if (target.directiveIds.length > 0) {
 		mutations.push({ type: 'DELETE_DIRECTIVES', ids: target.directiveIds });
+	}
+	if (target.commentIds && target.commentIds.length > 0) {
+		mutations.push({ type: 'DELETE_COMMENTS', ids: target.commentIds });
 	}
 	return { state, mutations };
 }
@@ -549,6 +569,13 @@ function handleMoveSelected(state: EditorState, delta: Point): ReducerResult {
 			delta
 		});
 	}
+	if (state.selection.commentIds.size > 0) {
+		mutations.push({
+			type: 'MOVE_COMMENTS',
+			ids: Array.from(state.selection.commentIds),
+			delta
+		});
+	}
 
 	// Update move start position for next delta calculation
 	if (state.modeState.type === 'moving') {
@@ -575,7 +602,8 @@ function handleDuplicateAt(
 	pos: Point,
 	schematic: Schematic,
 	componentId?: string,
-	wireId?: string
+	wireId?: string,
+	commentId?: string
 ): ReducerResult {
 	const mutations: SchematicMutation[] = [];
 	const gridSize = state.grid.size;
@@ -617,6 +645,17 @@ function handleDuplicateAt(
 				component: newComp
 			});
 
+			return { state, mutations };
+		}
+	}
+
+	if (commentId) {
+		const comment = schematic.comments?.find(c => c.id === commentId);
+		if (comment) {
+			mutations.push({
+				type: 'ADD_COMMENT',
+				comment: { ...comment, id: crypto.randomUUID(), x: comment.x + offset, y: comment.y + offset }
+			});
 			return { state, mutations };
 		}
 	}

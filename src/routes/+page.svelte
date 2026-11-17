@@ -4,15 +4,15 @@
 	import { initSimulation, runSimulation, terminateSimulation, type SimulationResult, type RealDataType } from '$lib/simulation';
 	import { TabbedWaveformViewer, type TraceData, type WaveformTab, getTraceColor, processAcResults } from '$lib/waveform';
 	import { NetlistEditor } from '$lib/editor';
-	import { SchematicCanvas, type Schematic, type Probe, type Component } from '$lib/schematic';
-	import { ResizablePanel, HelpModal, LandingPage, DirectiveModal, ComponentEditModal } from '$lib/components';
+	import { SchematicCanvas, type Schematic, type Probe, type Component, type TextComment } from '$lib/schematic';
+	import { ResizablePanel, HelpModal, LandingPage, DirectiveModal, ComponentEditModal, CommentEditModal } from '$lib/components';
 	import { schematicToNetlist, generateNodeLabels, calculateComponentCurrent } from '$lib/netlist';
 
 	let status = $state('Not initialized');
 	let simResult = $state<SimulationResult | null>(null);
 	let simInitInfo = $state<string>('');
 	let timeData = $state<number[]>([]);
-	let schematic = $state<Schematic>({ components: [], wires: [], junctions: [], directives: [], parameters: {}, models: [] });
+	let schematic = $state<Schematic>({ components: [], wires: [], junctions: [], directives: [], parameters: {}, models: [], comments: [] });
 	let probes = $state<Probe[]>([]);
 	let showHelp = $state(false);
 	let showLanding = $state(true);
@@ -407,7 +407,8 @@ Vin in 0 PULSE(0 5 0 1n 1n 0.5m 1m)
 				junctions: schematic.junctions,
 				directives: schematic.directives,
 				parameters: schematic.parameters,
-				models: schematic.models
+				models: schematic.models,
+				comments: schematic.comments
 			},
 			netlist: netlistInput,
 			savedAt: new Date().toISOString()
@@ -458,7 +459,8 @@ Vin in 0 PULSE(0 5 0 1n 1n 0.5m 1m)
 				junctions: data.schematic.junctions || [],
 				directives: data.schematic.directives || [],
 				parameters: data.schematic.parameters || {},
-				models: data.schematic.models || []
+				models: data.schematic.models || [],
+				comments: data.schematic.comments || []
 			};
 
 			// Load netlist if present
@@ -490,7 +492,7 @@ Vin in 0 PULSE(0 5 0 1n 1n 0.5m 1m)
 	/** Return to landing page */
 	function returnToLanding() {
 		// Clear current work
-		schematic = { components: [], wires: [], junctions: [], directives: [], parameters: {}, models: [] };
+		schematic = { components: [], wires: [], junctions: [], directives: [], parameters: {}, models: [], comments: [] };
 		probes = [];
 		simResult = null;
 		timeData = [];
@@ -525,7 +527,8 @@ Vin in 0 PULSE(0 5 0 1n 1n 0.5m 1m)
 				junctions: schematicData.schematic.junctions || [],
 				directives: schematicData.schematic.directives || [],
 				parameters: schematicData.schematic.parameters || {},
-				models: schematicData.schematic.models || []
+				models: schematicData.schematic.models || [],
+				comments: schematicData.schematic.comments || []
 			};
 
 			// Load netlist from file, or use embedded netlist, or generate from schematic
@@ -554,6 +557,34 @@ Vin in 0 PULSE(0 5 0 1n 1n 0.5m 1m)
 	function handleEditComponent(component: Component) {
 		editingComponent = component;
 		showComponentEdit = true;
+	}
+
+	/** Text comment editing */
+	let editingComment = $state<TextComment | null>(null);
+	let editingCommentIsNew = $state(false);
+	let showCommentEdit = $state(false);
+
+	function handleEditComment(comment: TextComment, isNew: boolean) {
+		editingComment = comment;
+		editingCommentIsNew = isNew;
+		showCommentEdit = true;
+	}
+
+	function handleSaveComment(comment: TextComment) {
+		const comments = schematic.comments ?? [];
+		schematic = {
+			...schematic,
+			comments: comments.some(c => c.id === comment.id)
+				? comments.map(c => (c.id === comment.id ? comment : c))
+				: [...comments, comment]
+		};
+	}
+
+	function handleDeleteComment(comment: TextComment) {
+		schematic = {
+			...schematic,
+			comments: (schematic.comments ?? []).filter(c => c.id !== comment.id)
+		};
 	}
 
 	/** Handle saving component edits */
@@ -619,7 +650,7 @@ Vin in 0 PULSE(0 5 0 1n 1n 0.5m 1m)
 					</button>
 				{/snippet}
 				<div class="panel-fill dark">
-					<SchematicCanvas bind:schematic onprobe={handleProbe} oneditcomponent={handleEditComponent} oneditdirectives={() => showDirectives = true} />
+					<SchematicCanvas bind:schematic onprobe={handleProbe} oneditcomponent={handleEditComponent} oneditdirectives={() => showDirectives = true} oneditcomment={handleEditComment} />
 				</div>
 			</ResizablePanel>
 			<div class="waveform-and-info">
@@ -665,6 +696,13 @@ Vin in 0 PULSE(0 5 0 1n 1n 0.5m 1m)
 		bind:parameters={schematic.parameters}
 		bind:models={schematic.models}
 		bind:directives={schematic.directives}
+	/>
+	<CommentEditModal
+		bind:visible={showCommentEdit}
+		comment={editingComment}
+		isNew={editingCommentIsNew}
+		onsave={handleSaveComment}
+		ondelete={handleDeleteComment}
 	/>
 	<ComponentEditModal
 		bind:visible={showComponentEdit}

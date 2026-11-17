@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import type { Point, Schematic, Component, Wire, ProbeType } from './types';
+	import type { Point, Schematic, Component, Wire, ProbeType, TextComment } from './types';
 	import { getModeName, MODE_SHORTCUTS } from './types';
 	import type { ComponentType } from './types';
 	import { renderComponent } from './component-renderer';
@@ -23,7 +23,9 @@
 		drawWires as drawWiresUtil,
 		drawJunctions as drawJunctionsUtil,
 		drawNodeLabels as drawNodeLabelsUtil,
-		drawDirectives as drawDirectivesUtil
+		drawDirectives as drawDirectivesUtil,
+		drawComments as drawCommentsUtil,
+		findCommentAt as findCommentAtUtil
 	} from './canvas';
 
 	import {
@@ -32,6 +34,8 @@
 		type HitTestResult,
 		createInitialEditorState,
 		getEditorMode,
+		hasSelection,
+		getSelectionCount,
 		editorReducer,
 		applyMutations
 	} from './editor';
@@ -48,12 +52,15 @@
 		schematic = $bindable({ components: [], wires: [], junctions: [] }),
 		onprobe,
 		oneditcomponent,
-		oneditdirectives
+		oneditdirectives,
+		oneditcomment
 	}: {
 		schematic: Schematic;
 		onprobe?: (event: ProbeEvent) => void;
 		oneditcomponent?: (component: Component) => void;
 		oneditdirectives?: () => void;
+		/** Open the comment editor; isNew means it isn't in schematic.comments yet */
+		oneditcomment?: (comment: TextComment, isNew: boolean) => void;
 	} = $props();
 
 	let canvas: HTMLCanvasElement;
@@ -134,9 +141,13 @@
 		return findDirectiveAtPosUtil(pos, schematic.directives, { ctx, viewScale: editorState.view.scale });
 	};
 
+	const findCommentAt = (pos: Point): TextComment | null =>
+		ctx ? findCommentAtUtil(ctx, pos, schematic.comments) : null;
+
 	// Perform hit test at position
-	function performHitTest(pos: Point): HitTestResult {
+	function performHitTest(pos: Point): HitTestResult & { comment?: TextComment } {
 		return {
+			comment: findCommentAt(pos) ?? undefined,
 			component: findComponentAt(pos) ?? undefined,
 			wire: findWireAt(pos) ?? undefined,
 			junction: findJunctionAt(pos) ?? undefined,
@@ -185,6 +196,9 @@
 
 		// Draw SPICE directives
 		drawDirectivesLocal(view.scale, selection.directiveIds);
+
+		// Draw text comments
+		drawCommentsUtil(ctx, view.scale, schematic.comments, selection.commentIds);
 
 		// Draw probe cursor overlay in probe mode
 		if (modeState.type === 'probing') {
@@ -370,6 +384,8 @@
 			text += ' | Click to delete (junctions/components/wires), Esc=exit';
 		} else if (mode === 'duplicate') {
 			text += ' | Click on item to duplicate, Esc=exit';
+		} else if (modeState.type === 'placing-comment') {
+			text += ' | Click to place a text comment, Esc=cancel';
 		} else if (modeState.type === 'moving') {
 			text += ' | Drag to move, Esc=exit';
 		} else if (modeState.type === 'probing') {
@@ -378,14 +394,14 @@
 			} else {
 				text += ' | Click wire=V probe, Click component=I probe, Hold+drag=V diff';
 			}
-		} else if (selection.componentIds.size > 0 || selection.wireIds.size > 0 || selection.directiveIds.size > 0) {
-			const total = selection.componentIds.size + selection.wireIds.size + selection.directiveIds.size;
+		} else if (hasSelection(selection)) {
+			const total = getSelectionCount(selection);
 			text += ` | Selected: ${total}`;
 			text += ' | Ctrl+R=rotate, Ctrl+E=mirror, Del=delete';
 		}
 
 		// Always show mode shortcuts hint
-		text += ' | 3=wire 5=del 6=dup 7=move P=probe';
+		text += ' | 3=wire 5=del 6=dup 7=move P=probe T=text';
 
 		return text;
 	}
@@ -436,6 +452,13 @@
 				return;
 			}
 
+			// Handle text comment placement: open the editor for a new comment here
+			if (modeState.type === 'placing-comment') {
+				dispatch({ type: 'CANCEL' });
+				oneditcomment?.({ id: crypto.randomUUID(), x: snapped.x, y: snapped.y, text: '' }, true);
+				return;
+			}
+
 			// Handle component placement
 			if (modeState.type === 'placing') {
 				dispatch({ type: 'PLACE_COMPONENT' });
@@ -444,7 +467,9 @@
 
 			// Handle move mode
 			if (modeState.type === 'moving') {
-				if (hitTest.directive && !selection.directiveIds.has(hitTest.directive.id)) {
+				if (hitTest.comment && !selection.commentIds.has(hitTest.comment.id)) {
+					dispatch({ type: 'SELECT', target: { commentId: hitTest.comment.id }, additive: e.shiftKey });
+				} else if (hitTest.directive && !selection.directiveIds.has(hitTest.directive.id)) {
 					dispatch({ type: 'SELECT', target: { directiveId: hitTest.directive.id }, additive: e.shiftKey });
 				} else if (hitTest.component && !selection.componentIds.has(hitTest.component.id)) {
 					dispatch({ type: 'SELECT', target: { componentId: hitTest.component.id }, additive: e.shiftKey });
@@ -456,7 +481,9 @@
 			}
 
 			// Select mode - check for selection
-			if (hitTest.directive) {
+			if (hitTest.comment) {
+				dispatch({ type: 'SELECT', target: { commentId: hitTest.comment.id }, additive: e.shiftKey });
+			} else if (hitTest.directive) {
 				dispatch({ type: 'SELECT', target: { directiveId: hitTest.directive.id }, additive: e.shiftKey });
 			} else if (hitTest.component) {
 				dispatch({ type: 'SELECT', target: { componentId: hitTest.component.id }, additive: e.shiftKey });
@@ -485,6 +512,15 @@
 
 	/** Handle click in delete mode - priority: junction > component > wire */
 	function handleDeleteClick(clickPos: Point) {
+		const comment = findCommentAt(clickPos);
+		if (comment) {
+			dispatch({
+				type: 'DELETE_AT',
+				target: { componentIds: [], wireIds: [], junctionIds: [], directiveIds: [], commentIds: [comment.id] }
+			});
+			return;
+		}
+
 		const junction = findJunctionAt(clickPos);
 		if (junction) {
 			dispatch({
@@ -529,6 +565,11 @@
 
 	/** Handle click in duplicate mode */
 	function handleDuplicateClick(clickPos: Point) {
+		const comment = findCommentAt(clickPos);
+		if (comment) {
+			dispatch({ type: 'DUPLICATE_AT', pos: clickPos, commentId: comment.id });
+			return;
+		}
 		const comp = findComponentAt(clickPos);
 		const wire = findWireAt(clickPos);
 		dispatch({
@@ -649,6 +690,13 @@
 	function handleDoubleClick(e: MouseEvent) {
 		const clickPos = screenToSchematic(e.offsetX, e.offsetY);
 
+		// Comments open the comment editor
+		const comment = findCommentAt(clickPos);
+		if (comment && oneditcomment) {
+			oneditcomment(comment, false);
+			return;
+		}
+
 		// Check if clicking on a directive first
 		if (findDirectiveAtPos(clickPos) && oneditdirectives) {
 			oneditdirectives();
@@ -690,6 +738,12 @@
 			// W key also enters wire mode
 			if (e.key === 'w' || e.key === 'W') {
 				dispatch({ type: 'SET_MODE', mode: 'wire' });
+				return;
+			}
+
+			// T places a text comment
+			if (e.key === 't' || e.key === 'T') {
+				dispatch({ type: 'SET_MODE', mode: 'comment' });
 				return;
 			}
 		}
@@ -734,7 +788,7 @@
 
 		// Delete selected
 		if (e.key === 'Delete' || e.key === 'Backspace') {
-			if (selection.componentIds.size > 0 || selection.wireIds.size > 0 || selection.directiveIds.size > 0) {
+			if (hasSelection(selection)) {
 				dispatch({ type: 'DELETE_SELECTED' });
 				return;
 			}
@@ -778,6 +832,7 @@
 			case 'drawing-wire': return 'crosshair';
 			case 'moving': return 'move';
 			case 'probing': return 'crosshair';
+			case 'placing-comment': return 'text';
 			default:
 				// Check for delete/duplicate in idle mode
 				const mode = getEditorMode(modeState);

@@ -470,11 +470,37 @@
         "type": "tran",
         "text": ".tran 1u 3m",
         "x": -320,
-        "y": 60
+        "y": 180
       }
     ],
     "parameters": {},
-    "models": []
+    "models": [],
+    "comments": [
+      {
+        "id": "ms-c1",
+        "x": -320,
+        "y": -330,
+        "text": "LOW-SIDE SWITCH (M1, NMOS)\nM1 sits between the load (R1) and ground.\nAn NMOS turns on when its gate is a few volts above\nits source. Its source is at 0 V, so the 5 V logic\nsignal from V2 can drive the gate directly."
+      },
+      {
+        "id": "ms-c2",
+        "x": 60,
+        "y": -345,
+        "text": "HIGH-SIDE SWITCH (M2, PMOS)\nM2 sits between the 12 V supply and the load (R3).\nA PMOS turns on when its gate is a few volts BELOW\nits source. Its source is on the 12 V rail, so its\ngate must be held at 12 V to turn it off and pulled\ndown towards 0 V to turn it on."
+      },
+      {
+        "id": "ms-c3",
+        "x": 60,
+        "y": 45,
+        "text": "WHY AN NMOS (M3) DRIVES THE PMOS GATE\nThe 5 V logic signal can never reach 12 V, so it\ncan't turn M2 off by itself. Instead R2 pulls M2's\ngate up to 12 V (off). M3 is a small low-side switch:\nwhen V3 goes high, M3 pulls M2's gate to 0 V and\nM2 turns on. This is a level shifter."
+      },
+      {
+        "id": "ms-c4",
+        "x": -320,
+        "y": 60,
+        "text": "WHY NOT USE AN NMOS ON THE HIGH SIDE TOO?\nIts source would sit at the load voltage (up to\n12 V), so its gate would need about 12 V + 5 V to\nstay on. That needs a gate driver or charge pump.\nA PMOS avoids that, at the cost of higher\non-resistance than a similar NMOS."
+      }
+    ]
   },
   "netlist": "* MOSFET Switches (low-side NMOS, high-side PMOS)\n* Left: M1 is a low-side switch. 5 V on its gate turns it on and pulls the\n*   bottom of load R1 to ground, so R1 gets the full 12 V.\n* Right: M2 is a high-side switch with its source on the 12 V rail. R2 holds its\n*   gate at 12 V (off). When V3 drives M3 on, M3 pulls M2's gate to 0 V\n*   (Vgs = -12 V), M2 turns on and load R3 is connected to 12 V.\n* M1-M3 include body diodes (D...body lines below).\n\nV1 1 0 DC 12\nR1 1 5 100\nM1 5 2 0 0 PWR_NMOS\nDM1_body 0 5  DBODY\nV2 2 0 PULSE(0 5 0 1u 1u 0.5m 1m)\nM2 6 3 1 1 PWR_PMOS\nDM2_body 6 1  DBODY\nR3 6 0 100\nR2 1 3 10k\nM3 3 4 0 0 PWR_NMOS\nDM3_body 0 3  DBODY\nV3 4 0 PULSE(0 5 0.25m 1u 1u 0.5m 1m)\n\n.model PWR_NMOS NMOS(Level=1 Vto=3 Kp=20 Lambda=0.01 Rd=10m Rs=10m Cgso=1n Cgdo=200p Cbd=0 Cbs=0 Is=0)\n.model DBODY D(Is=1e-12 N=1.1 Rs=10m Cjo=300p M=0.5 tt=50n BV=60 IBV=10u)\n.model PWR_PMOS PMOS(Level=1 Vto=-3 Kp=10 Lambda=0.01 Rd=20m Rs=20m Cgso=1n Cgdo=200p Cbd=0 Cbs=0 Is=0)\n.tran 1u 3m\n.end",
   "savedAt": "2026-11-17T00:00:00.000Z"

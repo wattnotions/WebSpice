@@ -51,6 +51,25 @@ function applyMutation(schematic: Schematic, mutation: SchematicMutation): void 
 			}
 			break;
 
+		case 'ADD_COMMENT':
+			schematic.comments = [...(schematic.comments ?? []), mutation.comment];
+			break;
+
+		case 'DELETE_COMMENTS':
+			if (schematic.comments) {
+				schematic.comments = schematic.comments.filter(c => !mutation.ids.includes(c.id));
+			}
+			break;
+
+		case 'MOVE_COMMENTS':
+			for (const comment of schematic.comments ?? []) {
+				if (mutation.ids.includes(comment.id)) {
+					comment.x += mutation.delta.x;
+					comment.y += mutation.delta.y;
+				}
+			}
+			break;
+
 		case 'MOVE_COMPONENTS':
 			for (const comp of schematic.components) {
 				if (mutation.ids.includes(comp.id)) {
