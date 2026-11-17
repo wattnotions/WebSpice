@@ -5,7 +5,7 @@
 	import { TabbedWaveformViewer, type TraceData, type WaveformTab, getTraceColor, processAcResults } from '$lib/waveform';
 	import { NetlistEditor } from '$lib/editor';
 	import { SchematicCanvas, type Schematic, type Probe, type Component, type TextComment } from '$lib/schematic';
-	import { ResizablePanel, HelpModal, LandingPage, DirectiveModal, ComponentEditModal, CommentEditModal, MenuBar, type Menu } from '$lib/components';
+	import { ResizablePanel, HelpModal, LandingPage, DirectiveModal, ComponentEditModal, CommentEditModal, MenuBar, IconButton, type Menu } from '$lib/components';
 	import { schematicToNetlist, generateNodeLabels, calculateComponentCurrent } from '$lib/netlist';
 
 	let status = $state('Not initialized');
@@ -300,6 +300,18 @@ Vin in 0 PULSE(0 5 0 1n 1n 0.5m 1m)
 				? { ...tab, traces: tab.traces.filter(t => t.id !== traceId) }
 				: tab
 		);
+	}
+
+	/**
+	 * Clear the plot: remove every probe and trace and go back to a single
+	 * empty "Plot 1" tab. Simulation results are kept, so probing again
+	 * shows traces straight away without re-running.
+	 */
+	function clearPlot() {
+		probes = [];
+		waveformTabs = [{ id: 'default', name: 'Plot 1', traces: [] }];
+		activeTabId = 'default';
+		status = 'Cleared all probes and traces';
 	}
 
 	/** Get total trace count across all tabs */
@@ -672,6 +684,15 @@ Vin in 0 PULSE(0 5 0 1n 1n 0.5m 1m)
 			</ResizablePanel>
 			<div class="waveform-and-info">
 				<ResizablePanel title="Waveform" direction="vertical" initialSize={initialSizes.waveform} minSize={100} bind:collapsed={waveformCollapsed}>
+					{#snippet titleActions()}
+						<IconButton
+							icon="reset"
+							label="Clear plot"
+							description="Removes all probes and traces and resets to a single empty plot tab. Simulation results are kept, so you can probe again without re-running."
+							onclick={clearPlot}
+							disabled={probes.length === 0 && getTotalTraceCount() === 0 && waveformTabs.length === 1}
+						/>
+					{/snippet}
 					<div class="panel-fill dark">
 						<TabbedWaveformViewer
 							bind:tabs={waveformTabs}

@@ -8,6 +8,7 @@
 		minSize = 100,
 		collapsed = $bindable(false),
 		children,
+		titleActions,
 		headerActions
 	}: {
 		title?: string;
@@ -16,7 +17,8 @@
 		minSize?: number;
 		collapsed?: boolean;
 		children: Snippet;
-		headerActions?: Snippet;
+		titleActions?: Snippet;   // Small buttons placed right after the title
+		headerActions?: Snippet;  // Buttons placed at the far right of the header
 	} = $props();
 
 	// svelte-ignore state_referenced_locally - intentionally capturing initial value only
@@ -76,6 +78,11 @@
 		{#if !collapsed && title}
 			<span class="panel-title">{title}</span>
 		{/if}
+		{#if !collapsed && titleActions}
+			<div class="title-actions">
+				{@render titleActions()}
+			</div>
+		{/if}
 		{#if !collapsed && headerActions}
 			<div class="header-actions">
 				{@render headerActions()}
@@ -127,6 +134,13 @@
 		background: var(--bg-tertiary);
 		border-bottom: 1px solid var(--border-primary);
 		min-height: 24px;
+	}
+
+	.title-actions {
+		display: flex;
+		align-items: center;
+		gap: 2px;
+		margin-left: 6px;
 	}
 
 	.header-actions {
