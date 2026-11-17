@@ -16,8 +16,8 @@
 		findJunctionAt as findJunctionAtUtil,
 		findDirectiveAtPos as findDirectiveAtPosUtil,
 		drawVoltageProbe as drawVoltageProbeUtil,
-		drawCurrentClamp as drawCurrentClampUtil,
-		findNodeForWire as findNodeForWireUtil,
+		findNetAt,
+		drawNetHighlight,
 		drawGrid as drawGridUtil,
 		drawOrigin as drawOriginUtil,
 		drawWires as drawWiresUtil,
@@ -53,7 +53,8 @@
 		onprobe,
 		oneditcomponent,
 		oneditdirectives,
-		oneditcomment
+		oneditcomment,
+		onmodechange
 	}: {
 		schematic: Schematic;
 		onprobe?: (event: ProbeEvent) => void;
@@ -61,7 +62,19 @@
 		oneditdirectives?: () => void;
 		/** Open the comment editor; isNew means it isn't in schematic.comments yet */
 		oneditcomment?: (comment: TextComment, isNew: boolean) => void;
+		/** Called when the editor mode changes ('select', 'probe', 'wire', ...) */
+		onmodechange?: (mode: string) => void;
 	} = $props();
+
+	/** Turn the voltage probe tool on or off (used by the toolbar button) */
+	export function toggleProbeMode() {
+		if (editorState.modeState.type === 'probing') {
+			dispatch({ type: 'CANCEL' });
+		} else {
+			dispatch({ type: 'SET_MODE', mode: 'probe' });
+		}
+		canvas?.focus();
+	}
 
 	let canvas: HTMLCanvasElement;
 	let ctx: CanvasRenderingContext2D | null = null;
@@ -157,8 +170,11 @@
 
 	// Dispatch an action through the reducer
 	function dispatch(action: EditorAction): void {
+		const prevMode = getEditorMode(editorState.modeState);
 		const result = editorReducer(editorState, action, schematic);
 		editorState = result.state;
+		const newMode = getEditorMode(editorState.modeState);
+		if (newMode !== prevMode) onmodechange?.(newMode);
 		if (result.mutations.length > 0) {
 			applyMutations(schematic, result.mutations);
 		}
@@ -309,17 +325,18 @@
 		drawDirectivesUtil(ctx, scale, schematic.directives, selectedDirectiveIds);
 	}
 
-	// Wrapper functions for probe drawing
+	// Wrapper for probe drawing
 	const drawVoltageProbeLocal = (x: number, y: number, color: string, label: string, scale: number): void => {
 		if (!ctx) return;
 		drawVoltageProbeUtil(ctx, x, y, color, label, scale);
 	};
 
-	const drawCurrentClampLocal = (x: number, y: number, scale: number): void => {
-		if (!ctx) return;
-		drawCurrentClampUtil(ctx, x, y, scale);
-	};
-
+	/**
+	 * Probe-mode overlay (LTspice style): the net under the cursor is highlighted
+	 * and a red probe follows the mouse. While dragging from a first net, that net
+	 * stays highlighted red with the red (+) probe on it, and the black (-) probe
+	 * follows the cursor.
+	 */
 	function drawProbeCursorLocal(
 		scale: number,
 		modeState: import('./editor').ModeState,
@@ -327,17 +344,17 @@
 	) {
 		if (!ctx || modeState.type !== 'probing') return;
 		const pos = schematicPos;
+		const netUnder = findNetAt(pos, schematic);
 
-		// Check what's under cursor
-		const compUnder = findComponentAt(pos);
-		const wireUnder = findWireAt(pos);
-
-		// If holding for differential probe
 		if (modeState.phase === 'holding-first' && modeState.firstNode) {
-			// Draw RED (+) probe fixed at first node (positive reference)
+			const firstNet = findNetAt(modeState.firstNode, schematic);
+			if (firstNet) drawNetHighlight(ctx, firstNet, '#ff3030', scale);
+			if (netUnder && netUnder.name !== firstNet?.name) drawNetHighlight(ctx, netUnder, '#b0b0b0', scale);
+
+			// Red (+) probe on the first node
 			drawVoltageProbeLocal(modeState.firstNode.x, modeState.firstNode.y, '#ff0000', '+', scale);
 
-			// Draw dashed line between probes
+			// Dashed line between probes
 			ctx.strokeStyle = '#888888';
 			ctx.lineWidth = 1 / scale;
 			ctx.setLineDash([4 / scale, 4 / scale]);
@@ -347,16 +364,13 @@
 			ctx.stroke();
 			ctx.setLineDash([]);
 
-			// Draw BLACK (-) probe at cursor (negative reference)
+			// Black (-) probe at the cursor
 			drawVoltageProbeLocal(pos.x, pos.y, '#000000', '-', scale);
-		} else if (compUnder && compUnder.type !== 'ground') {
-			// Current probe - draw clamp at cursor
-			drawCurrentClampLocal(pos.x, pos.y, scale);
-		} else if (wireUnder) {
-			// Voltage probe - draw red probe at cursor
+		} else if (netUnder) {
+			drawNetHighlight(ctx, netUnder, '#ff3030', scale);
 			drawVoltageProbeLocal(pos.x, pos.y, '#ff0000', '+', scale);
 		} else {
-			// Default - show faded probe at cursor
+			// Not over a net: faded probe
 			ctx.globalAlpha = 0.4;
 			drawVoltageProbeLocal(pos.x, pos.y, '#888888', '?', scale);
 			ctx.globalAlpha = 1.0;
@@ -390,9 +404,9 @@
 			text += ' | Drag to move, Esc=exit';
 		} else if (modeState.type === 'probing') {
 			if (modeState.phase === 'holding-first') {
-				text += ' | Release to measure V(+) - V(-), Esc=cancel';
+				text += ' | Release on another node for V(+)-V(-), or where you started for V(+)';
 			} else {
-				text += ' | Click wire=V probe, Click component=I probe, Hold+drag=V diff';
+				text += ' | Click a wire or pin to plot its voltage, drag between two nodes for the difference, Esc=exit';
 			}
 		} else if (hasSelection(selection)) {
 			const total = getSelectionCount(selection);
@@ -441,13 +455,11 @@
 				return;
 			}
 
-			// Handle probe mode
+			// Voltage probe mode: press on a net to put the red (+) probe there
 			if (modeState.type === 'probing') {
-				const nodeName = getNodeAtPosition(snapped);
-				if (hitTest.component && hitTest.component.type !== 'ground') {
-					dispatch({ type: 'PROBE_START', pos: snapped, nodeName, componentId: hitTest.component.id });
-				} else if (hitTest.wire) {
-					dispatch({ type: 'PROBE_START', pos: snapped, nodeName });
+				const net = findNetAt(clickPos, schematic);
+				if (net) {
+					dispatch({ type: 'PROBE_START', pos: clickPos, nodeName: net.name });
 				}
 				return;
 			}
@@ -580,32 +592,6 @@
 		});
 	}
 
-	/** Get node name at a position (from nodeLabels) - works on wires too */
-	function getNodeAtPosition(pos: Point): string | null {
-		if (!schematic.nodeLabels || schematic.nodeLabels.length === 0) {
-			return null;
-		}
-
-		const clickedWire = findWireAt(pos);
-		if (clickedWire) {
-			const nodeName = findNodeForWire(clickedWire);
-			if (nodeName) return nodeName;
-		}
-
-		let closest: { name: string; dist: number } | null = null;
-		for (const label of schematic.nodeLabels) {
-			const dist = Math.hypot(label.x - pos.x, label.y - pos.y);
-			if (dist < 50 && (!closest || dist < closest.dist)) {
-				closest = { name: label.name, dist };
-			}
-		}
-		return closest?.name || null;
-	}
-
-	// Wrapper for findNodeForWire
-	const findNodeForWire = (startWire: Wire): string | null =>
-		findNodeForWireUtil(startWire, schematic);
-
 	/** Add a probe (calls onprobe callback) */
 	function addProbe(type: ProbeType, node1: string, componentId?: string, node2?: string) {
 		const label = type === 'current'
@@ -653,28 +639,21 @@
 		const clickPos = screenToSchematic(e.offsetX, e.offsetY);
 		const snapped = snapToGrid(clickPos);
 
-		// Handle probe mode mouseup
-		if (modeState.type === 'probing' && modeState.phase === 'holding-first' && modeState.firstNode) {
-			const secondNodeName = getNodeAtPosition(snapped);
-			const dragDist = Math.hypot(snapped.x - modeState.firstNode.x, snapped.y - modeState.firstNode.y);
-			const isDrag = dragDist > 20;
-
-			if (isDrag && secondNodeName && modeState.firstNodeName && secondNodeName !== modeState.firstNodeName) {
-				// Differential voltage probe
-				addProbe('voltage-diff', modeState.firstNodeName, undefined, secondNodeName);
-			} else if (modeState.firstNodeName) {
-				// Single voltage probe
-				addProbe('voltage', modeState.firstNodeName);
+		// Voltage probe: release on a different net = V(first) - V(second),
+		// release on the same net (a click) = V(first)
+		if (modeState.type === 'probing' && modeState.phase === 'holding-first' && modeState.firstNode && modeState.firstNodeName) {
+			const first = modeState.firstNodeName;
+			const second = findNetAt(clickPos, schematic);
+			if (second && second.name !== first) {
+				if (second.name === '0') {
+					addProbe('voltage', first);  // V(x) - V(ground) is just V(x)
+				} else {
+					addProbe('voltage-diff', first, undefined, second.name);
+				}
+			} else {
+				addProbe('voltage', first);
 			}
-			dispatch({ type: 'PROBE_COMPLETE', pos: snapped, nodeName: secondNodeName });
-		} else if (modeState.type === 'probing' && modeState.targetComponentId) {
-			// Current probe on component
-			const comp = schematic.components.find(c => c.id === modeState.targetComponentId);
-			if (comp) {
-				const instName = comp.attributes['InstName'] || comp.id;
-				addProbe('current', instName, comp.id);
-			}
-			dispatch({ type: 'PROBE_COMPLETE', pos: snapped, nodeName: null });
+			dispatch({ type: 'PROBE_COMPLETE', pos: snapped, nodeName: second?.name ?? null });
 		}
 
 		// End view dragging or moving
@@ -709,6 +688,16 @@
 			// Emit event to open component edit modal
 			oneditcomponent(comp);
 		}
+	}
+
+	function handleMouseLeave(e: MouseEvent) {
+		// Leaving the canvas mid-drag cancels a probe instead of placing it
+		if (editorState.modeState.type === 'probing' && editorState.modeState.phase === 'holding-first') {
+			dispatch({ type: 'PROBE_COMPLETE', pos: editorState.schematicPos, nodeName: null });
+			lastScreenPos = null;
+			return;
+		}
+		handleMouseUp(e);
 	}
 
 	function handleWheel(e: WheelEvent) {
@@ -852,7 +841,7 @@
 		onmousedown={handleMouseDown}
 		onmousemove={handleMouseMove}
 		onmouseup={handleMouseUp}
-		onmouseleave={handleMouseUp}
+		onmouseleave={handleMouseLeave}
 		ondblclick={handleDoubleClick}
 		onwheel={handleWheel}
 		onkeydown={handleKeyDown}

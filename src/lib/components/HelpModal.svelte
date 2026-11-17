@@ -66,7 +66,7 @@
 							<tr><td><kbd>5</kbd></td><td>Delete mode (click to delete)</td></tr>
 							<tr><td><kbd>6</kbd></td><td>Duplicate mode (click to copy)</td></tr>
 							<tr><td><kbd>7</kbd></td><td>Move mode (drag to move)</td></tr>
-							<tr><td><kbd>P</kbd></td><td>Probe mode (measure voltage/current)</td></tr>
+							<tr><td><kbd>P</kbd></td><td>Voltage probe tool (or the probe button next to Schematic)</td></tr>
 							<tr><td><kbd>T</kbd></td><td>Place a text comment (double-click a comment to edit)</td></tr>
 							<tr><td><kbd>Esc</kbd></td><td>Cancel operation / return to select mode</td></tr>
 						</tbody>
@@ -102,12 +102,12 @@
 				</section>
 
 				<section>
-					<h3>Probe Mode (P key)</h3>
+					<h3>Voltage Probe (P key)</h3>
 					<table>
 						<tbody>
-							<tr><td><kbd>Click on wire</kbd></td><td>Voltage probe V(node)</td></tr>
-							<tr><td><kbd>Click on component</kbd></td><td>Current probe I(component)</td></tr>
-							<tr><td><kbd>Click + Hold + Drag</kbd></td><td>Differential voltage V(+) - V(-)</td></tr>
+							<tr><td><kbd>Click a wire or pin</kbd></td><td>Plot that node's voltage V(node)</td></tr>
+							<tr><td><kbd>Drag node to node</kbd></td><td>Plot the difference V(+) - V(-): red where you press, black where you release</td></tr>
+							<tr><td><kbd>Esc</kbd></td><td>Leave probe mode</td></tr>
 						</tbody>
 					</table>
 				</section>

@@ -5,6 +5,7 @@
 
 import type { Point, Wire, Schematic } from '../types';
 import { pointOnWire, pointsEqual, analyzeConnectivity } from '$lib/netlist/connectivity';
+import { hitTestWire } from './hit-testing';
 
 /**
  * Draw a voltage probe shape (pointed tip like multimeter probe)
@@ -130,3 +131,85 @@ export function findNodeForWire(startWire: Wire, schematic: Schematic): string |
 	return null;
 }
 
+
+/** A net found under the cursor, for probing */
+export interface ProbeNet {
+	name: string;      // SPICE node name ("0" is ground), same numbering as the generated netlist
+	isGround: boolean;
+	wires: Wire[];     // Wires belonging to this net (for highlighting)
+	pins: Point[];     // Component pin positions on this net
+}
+
+/**
+ * Find the net under a point: a component pin within `pinTolerance`, or a wire
+ * within `wireTolerance`. Works straight from the schematic, so it doesn't need
+ * a generated netlist. Pins win over wires so you can probe a part's terminal.
+ */
+export function findNetAt(
+	pos: Point,
+	schematic: Schematic,
+	pinTolerance = 6,
+	wireTolerance = 5
+): ProbeNet | null {
+	const connectivity = analyzeConnectivity(schematic);
+	const key = (p: Point) => `${Math.round(p.x)},${Math.round(p.y)}`;
+
+	let netId: string | null = null;
+
+	// 1. Nearest component pin
+	let best = pinTolerance;
+	for (const pc of connectivity.pinConnections) {
+		const d = Math.hypot(pc.position.x - pos.x, pc.position.y - pos.y);
+		if (d <= best && pc.netId) {
+			best = d;
+			netId = pc.netId;
+		}
+	}
+
+	// 2. Wire under the cursor
+	if (!netId) {
+		const wire = [...schematic.wires].reverse().find((w) => hitTestWire(w, pos.x, pos.y, wireTolerance));
+		if (wire) {
+			const ends = new Set([key({ x: wire.x1, y: wire.y1 }), key({ x: wire.x2, y: wire.y2 })]);
+			netId = connectivity.nets.find((n) => n.points.some((p) => ends.has(key(p))))?.id ?? null;
+		}
+	}
+
+	const net = netId ? connectivity.nets.find((n) => n.id === netId) : undefined;
+	if (!net) return null;
+
+	const points = new Set(net.points.map(key));
+	return {
+		name: net.name,
+		isGround: net.isGround,
+		wires: schematic.wires.filter((w) => points.has(key({ x: w.x1, y: w.y1 })) || points.has(key({ x: w.x2, y: w.y2 }))),
+		pins: connectivity.pinConnections.filter((pc) => pc.netId === net.id).map((pc) => pc.position)
+	};
+}
+
+/** Highlight a net's wires and pins (probe-mode hover feedback) */
+export function drawNetHighlight(
+	ctx: CanvasRenderingContext2D,
+	net: ProbeNet,
+	color: string,
+	scale: number
+): void {
+	ctx.save();
+	ctx.strokeStyle = color;
+	ctx.globalAlpha = 0.45;
+	ctx.lineWidth = 6 / scale;
+	ctx.lineCap = 'round';
+	for (const w of net.wires) {
+		ctx.beginPath();
+		ctx.moveTo(w.x1, w.y1);
+		ctx.lineTo(w.x2, w.y2);
+		ctx.stroke();
+	}
+	ctx.fillStyle = color;
+	for (const p of net.pins) {
+		ctx.beginPath();
+		ctx.arc(p.x, p.y, 4 / scale, 0, Math.PI * 2);
+		ctx.fill();
+	}
+	ctx.restore();
+}

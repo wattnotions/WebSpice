@@ -9,7 +9,9 @@
 		// Trash can
 		trash: '<path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.7 8.5h5.6l.7-8.5"/>',
 		// Plus
-		plus: '<path d="M8 3v10M3 8h10"/>'
+		plus: '<path d="M8 3v10M3 8h10"/>',
+		// Voltage probe: probe body with a pointed tip at the lower left
+		probe: '<path d="M2.5 13.5l3-3"/><path d="M5 11l1.5-3.5L11 3l2 2-4.5 4.5z"/>'
 	} as const;
 
 	export type IconName = keyof typeof ICONS;
@@ -26,7 +28,8 @@
 		description = '',
 		onclick,
 		disabled = false,
-		danger = false
+		danger = false,
+		active = false
 	}: {
 		icon: IconName;
 		label: string;          // Short name, also used as the accessible label
@@ -34,6 +37,7 @@
 		onclick: () => void;
 		disabled?: boolean;
 		danger?: boolean;       // Red hover, for destructive actions
+		active?: boolean;       // Shown pressed, for tools that stay on (e.g. probe mode)
 	} = $props();
 
 	let wrapper: HTMLSpanElement;
@@ -71,7 +75,7 @@
 	onfocusout={hide}
 	role="presentation"
 >
-	<button class="icon-button" class:danger {disabled} aria-label={label} onclick={handleClick}>
+	<button class="icon-button" class:danger class:active {disabled} aria-label={label} aria-pressed={active} onclick={handleClick}>
 		<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 			{@html ICONS[icon]}
 		</svg>
@@ -115,6 +119,12 @@
 		color: var(--text-primary);
 		background: var(--bg-secondary);
 		border-color: var(--border-primary);
+	}
+
+	.icon-button.active {
+		color: #fff;
+		background: var(--btn-primary-bg);
+		border-color: var(--btn-primary-hover);
 	}
 
 	.icon-button.danger:hover:not(:disabled) {

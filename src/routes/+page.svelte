@@ -24,6 +24,10 @@
 	let waveformTabs = $state<WaveformTab[]>([{ id: 'default', name: 'Plot 1', traces: [] }]);
 	let activeTabId = $state('default');
 
+	// Schematic editor: component ref (for toolbar buttons) and its current mode
+	let schematicCanvas: ReturnType<typeof SchematicCanvas> | undefined = $state();
+	let schematicMode = $state('select');
+
 	let netlistCollapsed = $state(true);  // Netlist panel starts collapsed; click ▶ to expand
 	let schematicCollapsed = $state(false);
 	let waveformCollapsed = $state(false);
@@ -99,8 +103,15 @@ Vin in 0 PULSE(0 5 0 1n 1n 0.5m 1m)
 						break;
 					}
 				}
-				// Auto-populate all simulation variables to the active tab
-				addAllSimulationTracesToActiveTab();
+				if (schematic.components.length === 0) {
+					// Netlist typed by hand (nothing to probe): show every signal
+					addAllSimulationTracesToActiveTab();
+				} else if (probes.length > 0) {
+					// LTspice style: re-plot whatever was probed before this run
+					for (const probe of probes) addProbeTracesToActiveTab(probe);
+				} else {
+					status += ' | Press P (or the probe button) and click a wire to plot it';
+				}
 			}
 		} catch (err) {
 			status = `Simulation error: ${err}`;
@@ -333,23 +344,21 @@ Vin in 0 PULSE(0 5 0 1n 1n 0.5m 1m)
 			label
 		};
 
-		// Check if probe already exists in the probes list (for toggle behavior)
-		const existingIndex = probes.findIndex(p => p.label === label);
-		if (existingIndex >= 0) {
-			// Remove existing probe (toggle off) - but don't remove traces
-			probes = probes.filter((_, i) => i !== existingIndex);
-			status = `Removed probe from list: ${label}`;
-		} else {
-			// Add to probes list for tracking
+		if (type === 'voltage' && node1 === '0') {
+			status = 'That node is ground (0 V)';
+			return;
+		}
+
+		// Remember the probe so it is re-plotted on the next run
+		if (!probes.some(p => p.label === label)) {
 			probes = [...probes, newProbe];
 		}
 
-		// Always try to add the trace to the active tab (if not already there)
 		if (simResult) {
 			addProbeTracesToActiveTab(newProbe);
-			status = `Added probe: ${label}`;
+			status = `Plotted ${label}`;
 		} else {
-			status = `Probe added: ${label} (run simulation to see trace)`;
+			status = `Probe added: ${label} (it will be plotted when you run the simulation)`;
 		}
 	}
 
@@ -673,13 +682,22 @@ Vin in 0 PULSE(0 5 0 1n 1n 0.5m 1m)
 		</ResizablePanel>
 		<div class="right-panel">
 			<ResizablePanel title="Schematic" direction="vertical" initialSize={initialSizes.schematic} minSize={100} bind:collapsed={schematicCollapsed}>
+				{#snippet titleActions()}
+					<IconButton
+						icon="probe"
+						label="Voltage probe (P)"
+						description="Click a wire or component pin to plot its voltage. Click and drag from one node to another to plot the difference: red (+) where you press, black (-) where you release. Esc to stop."
+						active={schematicMode === 'probe'}
+						onclick={() => schematicCanvas?.toggleProbeMode()}
+					/>
+				{/snippet}
 				{#snippet headerActions()}
 					<button class="panel-action-btn" onclick={() => showDirectives = true} title="Edit SPICE directives">
 						Directives
 					</button>
 				{/snippet}
 				<div class="panel-fill dark">
-					<SchematicCanvas bind:schematic onprobe={handleProbe} oneditcomponent={handleEditComponent} oneditdirectives={() => showDirectives = true} oneditcomment={handleEditComment} />
+					<SchematicCanvas bind:this={schematicCanvas} bind:schematic onmodechange={(m) => schematicMode = m} onprobe={handleProbe} oneditcomponent={handleEditComponent} oneditdirectives={() => showDirectives = true} oneditcomment={handleEditComment} />
 				</div>
 			</ResizablePanel>
 			<div class="waveform-and-info">

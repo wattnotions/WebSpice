@@ -15,7 +15,7 @@ A browser-based SPICE circuit simulator with a minimal GUI. Runs entirely client
 - **Netlist Generation**: Automatic SPICE netlist generation from schematic
 - **Simulation**: Transient analysis via NGSpice WASM (runs in Web Worker)
 - **Waveform Viewer**: WebGL-based plotting with pan, zoom, cursors, and multiple tabs
-- **Probing**: Voltage probes (click on wire), current probes (click on component), differential voltage (drag between nodes)
+- **Probing** (LTspice style): press P, click a wire or pin to plot its voltage, or drag from one node to another for the difference. Probed signals are re-plotted on every run
 - **Persistence**: Save/load schematics as JSON files
 
 ## Keyboard Shortcuts
@@ -28,7 +28,7 @@ A browser-based SPICE circuit simulator with a minimal GUI. Runs entirely client
 | 5 | Delete mode |
 | 6 | Duplicate mode |
 | 7 | Move mode |
-| P | Probe mode |
+| P | Voltage probe |
 | T | Place text comment (double-click to edit) |
 | Ctrl+R | Rotate selected |
 | Ctrl+E | Mirror selected |
