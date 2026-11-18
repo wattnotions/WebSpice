@@ -8,6 +8,7 @@
 
 import type { SpiceModel } from '../schematic/types';
 import { SUBCIRCUIT_MODELS } from './subcircuits.generated';
+import type { PartDatasheet } from './datasheet';
 
 /** Model category for organization */
 export type ModelCategory = 'diode' | 'bjt' | 'mosfet' | 'jfet' | 'other';
@@ -142,6 +143,7 @@ export interface SubcircuitModel {
 	description: string;
 	source: string;       // Original vendor file
 	text: string;         // ngspice-ready .SUBCKT text
+	datasheet?: PartDatasheet;  // Ratings etc. from <PART>.datasheet.json, if present
 }
 
 export { SUBCIRCUIT_MODELS };

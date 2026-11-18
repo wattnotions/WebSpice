@@ -1,0 +1,68 @@
+{
+  "part": "CSD17382F4",
+  "manufacturer": "Texas Instruments",
+  "description": "30 V N-channel FemtoFET MOSFET, logic level (specified down to VGS = 1.8 V)",
+  "datasheet": {
+    "url": "https://www.ti.com/lit/ds/symlink/csd17382f4.pdf",
+    "document": "SLPS562C",
+    "revised": "2022-02"
+  },
+  "package": {
+    "name": "Femto (0402) 1.0 mm x 0.6 mm SMD leadless",
+    "size_mm": [1.0, 0.6, 0.36],
+    "pins": ["D", "G", "S"]
+  },
+  "units": "SI throughout: V, A, W, ohm, F, C, s, J; temperatures in degC, thermal resistance in degC/W",
+
+  "absolute_maximum": {
+    "conditions": "TA = 25 degC",
+    "vds_max": 30,
+    "vgs_max": 10,
+    "id_continuous": 2.3,
+    "id_pulsed": 14.8,
+    "id_pulsed_max_width": 100e-6,
+    "id_pulsed_max_duty": 0.01,
+    "pd_max": 0.5,
+    "tj_min": -55,
+    "tj_max": 150,
+    "eas": 2.1e-3,
+    "eas_conditions": "single pulse, ID = 6.5 A, L = 0.1 mH, RG = 25 ohm",
+    "esd_hbm": 3000,
+    "esd_cdm": 2000,
+    "notes": [
+      "id_continuous and pd_max assume RthJA = 245 degC/W (datasheet footnote 1).",
+      "id_pulsed: pulse width <= 100 us, duty cycle <= 1 % (footnote 2).",
+      "vgs_max is listed as 10 V with no sign; the gate has back-to-back ESD diodes, so treat it as |VGS| <= 10 V."
+    ]
+  },
+
+  "thermal": {
+    "rth_ja_min_cu": 245,
+    "rth_ja_1in2_cu": 85,
+    "notes": [
+      "Thermal table: 85 degC/W on FR4 with 1 in2 of 2 oz Cu, 245 degC/W with minimum Cu.",
+      "The absolute maximum footnote quotes 245 degC/W 'on 1 in2', which contradicts the thermal table; the 2.3 A / 500 mW ratings match 245 degC/W (0.5 W x 245 = 122.5 degC rise to 147.5 degC)."
+    ]
+  },
+
+  "electrical": {
+    "conditions": "TA = 25 degC",
+    "bv_dss_min": 30,
+    "i_dss_max": 1e-6,
+    "i_gss_max": 5e-6,
+    "vgs_th": { "min": 0.7, "typ": 0.9, "max": 1.2, "conditions": "VDS = VGS, ID = 250 uA" },
+    "rds_on": [
+      { "vgs": 1.8, "id": 0.5, "typ": 0.110, "max": 0.180 },
+      { "vgs": 2.5, "id": 0.5, "typ": 0.067, "max": 0.082 },
+      { "vgs": 4.5, "id": 0.5, "typ": 0.056, "max": 0.067 },
+      { "vgs": 8.0, "id": 0.5, "typ": 0.054, "max": 0.064 }
+    ],
+    "gfs_typ": 5.9,
+    "capacitance": { "ciss": { "typ": 267e-12, "max": 347e-12 }, "coss": { "typ": 31.0e-12, "max": 40.3e-12 }, "crss": { "typ": 15.0e-12, "max": 19.5e-12 }, "conditions": "VGS = 0 V, VDS = 15 V, f = 1 MHz" },
+    "rg_typ": 220,
+    "gate_charge": { "qg_4v5": { "typ": 2.1e-9, "max": 2.7e-9 }, "qgd": 0.63e-9, "qgs": 0.41e-9, "qg_th": 0.12e-9, "conditions": "VDS = 15 V, ID = 0.5 A" },
+    "qoss": 1.53e-9,
+    "switching": { "td_on": 59e-9, "tr": 111e-9, "td_off": 279e-9, "tf": 270e-9, "conditions": "VDS = 15 V, VGS = 4.5 V, ID = 0.5 A, RG = 0 ohm" },
+    "body_diode": { "vsd": { "typ": 0.7, "max": 1.0 }, "conditions": "ISD = 0.5 A, VGS = 0 V" }
+  }
+}

@@ -6,6 +6,10 @@
  * .SUBCKT found to src/lib/models/subcircuits.generated.ts, where the netlist
  * generator and the part dialog pick them up.
  *
+ * If <PART>.datasheet.json sits in the same folder as the model (ratings,
+ * thermal data, electrical table; see src/lib/models/datasheet.ts), it is
+ * checked and stored with the model.
+ *
  * Usage:
  *   pnpm models:import
  *   pnpm exec tsx scripts/import-spice-model.ts [--dir static/SpiceModels] [--out <file>]
@@ -18,9 +22,10 @@
  * The whole output file is regenerated on each run from everything in --dir.
  */
 
-import { readFileSync, writeFileSync, readdirSync, statSync } from 'fs';
-import { join, relative, resolve } from 'path';
+import { readFileSync, writeFileSync, readdirSync, statSync, existsSync } from 'fs';
+import { join, relative, resolve, dirname } from 'path';
 import { convertPspiceToNgspice, findSubckts, findPortNames } from '../src/lib/models/pspice';
+import { validateDatasheet, type PartDatasheet } from '../src/lib/models/datasheet';
 
 type Kind = 'nmos' | 'pmos';
 
@@ -31,6 +36,7 @@ interface Entry {
 	description: string;
 	source: string;
 	text: string;
+	datasheet?: PartDatasheet;
 }
 
 function listModelFiles(dir: string): string[] {
@@ -41,6 +47,25 @@ function listModelFiles(dir: string): string[] {
 		else if (/\.(lib|mod|sub|cir|txt|spi|sp)$/i.test(name)) out.push(p);
 	}
 	return out.sort();
+}
+
+/** Read <name>.datasheet.json next to the model file, if there is one */
+function readDatasheet(modelFile: string, name: string): PartDatasheet | undefined {
+	const dir = dirname(modelFile);
+	const file = readdirSync(dir).find((f) => f.toLowerCase() === `${name.toLowerCase()}.datasheet.json`);
+	if (!file) return undefined;
+	const path = join(dir, file);
+	let data: unknown;
+	try {
+		data = JSON.parse(readFileSync(path, 'utf8'));
+	} catch (err) {
+		throw new Error(`${relative(process.cwd(), path)} is not valid JSON: ${err instanceof Error ? err.message : err}`);
+	}
+	const problems = validateDatasheet(data, name);
+	if (problems.length) {
+		throw new Error(`${relative(process.cwd(), path)}:\n  ${problems.join('\n  ')}`);
+	}
+	return data as PartDatasheet;
 }
 
 /** Work out N or P channel from the MOSFET(s) inside the subcircuit */
@@ -102,15 +127,26 @@ function main() {
 			if (!kind) { console.warn(`  SKIPPED ${sc.name}: can't tell N or P channel (use --kind ${sc.name}=nmos)`); continue; }
 			if (!pins || pins.length !== sc.ports.length) { console.warn(`  SKIPPED ${sc.name}: unknown pin order (use --pins ${sc.name}=D,G,S)`); continue; }
 			if (!['D', 'G', 'S'].every((p) => pins.includes(p))) { console.warn(`  SKIPPED ${sc.name}: pins ${pins.join(',')} aren't a 3-pin D/G/S MOSFET`); continue; }
+			const datasheet = readDatasheet(file, sc.name);
 			entries.push({
 				name: sc.name,
 				kind,
 				pins,
-				description: describe(raw, sc.name),
+				description: datasheet
+					? `${datasheet.manufacturer} ${sc.name}: ${datasheet.description ?? 'vendor model'}`
+					: describe(raw, sc.name),
 				source: relative(process.cwd(), resolve(file)),
-				text
+				text,
+				datasheet
 			});
 			console.log(`  -> ${sc.name}: ${kind.toUpperCase()}, ports ${sc.ports.join(' ')} = ${pins.join(' ')}`);
+			if (datasheet) {
+				const am = datasheet.absolute_maximum;
+				console.log(`     datasheet: ${datasheet.datasheet.document ?? datasheet.datasheet.url}, ` +
+					`VDS ${am.vds_max} V, VGS ${am.vgs_max} V, ID ${am.id_continuous} A, PD ${am.pd_max} W, TJ ${am.tj_max} C`);
+			} else {
+				console.log(`     (no ${sc.name}.datasheet.json, so no ratings for this part)`);
+			}
 		}
 	}
 
@@ -121,7 +157,9 @@ function main() {
 			`\t\tpins: ${JSON.stringify(e.pins)},\n` +
 			`\t\tdescription: ${JSON.stringify(e.description)},\n` +
 			`\t\tsource: ${JSON.stringify(e.source)},\n` +
-			`\t\ttext: ${JSON.stringify(e.text)}\n\t}`)
+			`\t\ttext: ${JSON.stringify(e.text)}` +
+			(e.datasheet ? `,\n\t\tdatasheet: ${JSON.stringify(e.datasheet, null, '\t').replace(/\n/g, '\n\t\t')}` : '') +
+			`\n\t}`)
 		.join(',\n');
 
 	writeFileSync(

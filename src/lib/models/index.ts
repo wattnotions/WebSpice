@@ -15,4 +15,5 @@ export {
 	SUBCIRCUIT_MODELS,
 	findSubcircuit
 } from './component-library';
+export { type PartDatasheet, validateDatasheet } from './datasheet';
 
