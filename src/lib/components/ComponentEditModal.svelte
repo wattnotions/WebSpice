@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Component, SpiceModel } from '$lib/schematic/types';
-	import { ALL_MODELS } from '$lib/models/component-library';
+	import { ALL_MODELS, SUBCIRCUIT_MODELS } from '$lib/models/component-library';
 	import SourceEditModal from './SourceEditModal.svelte';
 
 	let {
@@ -98,7 +98,7 @@
 			case 'diode': return 'e.g., 1N4148, 1N4001, LED_RED';
 			case 'npn': return 'e.g., 2N2222, 2N3904';
 			case 'pnp': return 'e.g., 2N3906';
-			case 'nmos_bd': return 'e.g., PWR_NMOS';
+			case 'nmos_bd': return 'e.g., PWR_NMOS, CSD17382F4';
 			case 'pmos_bd': return 'e.g., PWR_PMOS';
 			default: return '';
 		}
@@ -112,9 +112,16 @@
 			if (type === 'diode') return model.type === 'D';
 			if (type === 'npn') return model.type === 'NPN';
 			if (type === 'pnp') return model.type === 'PNP';
+			if (type === 'nmos' || type === 'nmos_bd') return model.type === 'NMOS';
+			if (type === 'pmos' || type === 'pmos_bd') return model.type === 'PMOS';
 			return false;
 		});
-		return [...new Set([...schematicModels, ...libraryModels])];
+		// Vendor subcircuit models (e.g. TI CSD17382F4) for MOSFETs of the same channel type
+		const channel = type.startsWith('nmos') ? 'nmos' : type.startsWith('pmos') ? 'pmos' : null;
+		const vendorModels = channel
+			? Object.values(SUBCIRCUIT_MODELS).filter(m => m.kind === channel).map(m => m.name)
+			: [];
+		return [...new Set([...schematicModels, ...libraryModels, ...vendorModels])];
 	}
 
 	function selectModel(modelName: string) {

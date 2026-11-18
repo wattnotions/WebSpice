@@ -1,0 +1,333 @@
+{
+  "version": 1,
+  "schematic": {
+    "components": [
+      {
+        "id": "ls-r1",
+        "type": "resistor",
+        "x": 0,
+        "y": -150,
+        "rotation": 0,
+        "mirror": false,
+        "attributes": {
+          "InstName": "R1",
+          "Value": "24"
+        },
+        "pins": [
+          {
+            "x": 0,
+            "y": -30,
+            "name": "1",
+            "id": "0"
+          },
+          {
+            "x": 0,
+            "y": 30,
+            "name": "2",
+            "id": "1"
+          }
+        ]
+      },
+      {
+        "id": "ls-m1",
+        "type": "nmos_bd",
+        "x": -20,
+        "y": -60,
+        "rotation": 0,
+        "mirror": false,
+        "attributes": {
+          "InstName": "M1",
+          "Value": "CSD17382F4"
+        },
+        "pins": [
+          {
+            "x": 20,
+            "y": -40,
+            "name": "D",
+            "id": "0"
+          },
+          {
+            "x": -40,
+            "y": 0,
+            "name": "G",
+            "id": "1"
+          },
+          {
+            "x": 20,
+            "y": 40,
+            "name": "S",
+            "id": "2"
+          }
+        ]
+      },
+      {
+        "id": "ls-g1",
+        "type": "ground",
+        "x": 0,
+        "y": -10,
+        "rotation": 0,
+        "mirror": false,
+        "attributes": {
+          "InstName": "",
+          "Value": ""
+        },
+        "pins": [
+          {
+            "x": 0,
+            "y": -10,
+            "name": "0",
+            "id": "0"
+          }
+        ]
+      },
+      {
+        "id": "ls-v1",
+        "type": "voltage",
+        "x": 140,
+        "y": -120,
+        "rotation": 0,
+        "mirror": false,
+        "attributes": {
+          "InstName": "V1",
+          "Value": "DC 12"
+        },
+        "pins": [
+          {
+            "x": 0,
+            "y": -40,
+            "name": "+",
+            "id": "0"
+          },
+          {
+            "x": 0,
+            "y": 40,
+            "name": "-",
+            "id": "1"
+          }
+        ]
+      },
+      {
+        "id": "ls-g2",
+        "type": "ground",
+        "x": 140,
+        "y": -70,
+        "rotation": 0,
+        "mirror": false,
+        "attributes": {
+          "InstName": "",
+          "Value": ""
+        },
+        "pins": [
+          {
+            "x": 0,
+            "y": -10,
+            "name": "0",
+            "id": "0"
+          }
+        ]
+      },
+      {
+        "id": "ls-v2",
+        "type": "voltage",
+        "x": -340,
+        "y": -20,
+        "rotation": 0,
+        "mirror": false,
+        "attributes": {
+          "InstName": "V2",
+          "Value": "PULSE(0 3.3 0 10n 10n 0.5m 1m)"
+        },
+        "pins": [
+          {
+            "x": 0,
+            "y": -40,
+            "name": "+",
+            "id": "0"
+          },
+          {
+            "x": 0,
+            "y": 40,
+            "name": "-",
+            "id": "1"
+          }
+        ]
+      },
+      {
+        "id": "ls-g3",
+        "type": "ground",
+        "x": -340,
+        "y": 30,
+        "rotation": 0,
+        "mirror": false,
+        "attributes": {
+          "InstName": "",
+          "Value": ""
+        },
+        "pins": [
+          {
+            "x": 0,
+            "y": -10,
+            "name": "0",
+            "id": "0"
+          }
+        ]
+      },
+      {
+        "id": "ls-r2",
+        "type": "resistor",
+        "x": -90,
+        "y": -60,
+        "rotation": 90,
+        "mirror": false,
+        "attributes": {
+          "InstName": "R2",
+          "Value": "100"
+        },
+        "pins": [
+          {
+            "x": 0,
+            "y": -30,
+            "name": "1",
+            "id": "0"
+          },
+          {
+            "x": 0,
+            "y": 30,
+            "name": "2",
+            "id": "1"
+          }
+        ]
+      },
+      {
+        "id": "ls-r3",
+        "type": "resistor",
+        "x": -60,
+        "y": -10,
+        "rotation": 0,
+        "mirror": false,
+        "attributes": {
+          "InstName": "R3",
+          "Value": "100k"
+        },
+        "pins": [
+          {
+            "x": 0,
+            "y": -30,
+            "name": "1",
+            "id": "0"
+          },
+          {
+            "x": 0,
+            "y": 30,
+            "name": "2",
+            "id": "1"
+          }
+        ]
+      },
+      {
+        "id": "ls-g4",
+        "type": "ground",
+        "x": -60,
+        "y": 30,
+        "rotation": 0,
+        "mirror": false,
+        "attributes": {
+          "InstName": "",
+          "Value": ""
+        },
+        "pins": [
+          {
+            "x": 0,
+            "y": -10,
+            "name": "0",
+            "id": "0"
+          }
+        ]
+      }
+    ],
+    "wires": [
+      {
+        "id": "ls-w1",
+        "x1": 0,
+        "y1": -180,
+        "x2": 0,
+        "y2": -200
+      },
+      {
+        "id": "ls-w2",
+        "x1": 0,
+        "y1": -200,
+        "x2": 140,
+        "y2": -200
+      },
+      {
+        "id": "ls-w3",
+        "x1": 140,
+        "y1": -200,
+        "x2": 140,
+        "y2": -160
+      },
+      {
+        "id": "ls-w4",
+        "x1": 0,
+        "y1": -120,
+        "x2": 0,
+        "y2": -100
+      },
+      {
+        "id": "ls-w5",
+        "x1": -340,
+        "y1": -60,
+        "x2": -120,
+        "y2": -60
+      },
+      {
+        "id": "ls-w6",
+        "x1": -60,
+        "y1": -60,
+        "x2": -60,
+        "y2": -40
+      }
+    ],
+    "junctions": [
+      {
+        "id": "ls-j1",
+        "x": -60,
+        "y": -60
+      }
+    ],
+    "directives": [
+      {
+        "id": "ls-tran",
+        "type": "tran",
+        "text": ".tran 1u 3m",
+        "x": -340,
+        "y": 175
+      }
+    ],
+    "parameters": {},
+    "models": [],
+    "comments": [
+      {
+        "id": "ls-c1",
+        "x": -340,
+        "y": -330,
+        "text": "LOW-SIDE SWITCH WITH A 3.3 V LOGIC-LEVEL FET (TI CSD17382F4)\nV2 stands in for a 3.3 V microcontroller pin. When it goes high, M1 turns\non and connects the bottom of the load (R1) to ground, so the load gets 12 V.\nThe CSD17382F4 is fully on from about 2.5 V (around 60 mOhm), so a 3.3 V\npin can drive it directly. M1 uses TI's own SPICE model, body diode included."
+      },
+      {
+        "id": "ls-c2",
+        "x": -340,
+        "y": 65,
+        "text": "R2 (100 Ohm) limits the current spike into the gate when the pin switches.\nR3 (100k) holds the gate low, so M1 stays off while the microcontroller\nis still booting and its pin is floating."
+      },
+      {
+        "id": "ls-c3",
+        "x": 230,
+        "y": -200,
+        "text": "Try it: run (Ctrl+B), press P, then click\nthe drain wire above M1 and the wire\nbetween V2 and R2.\nDrain: 12 V when off, about 30 mV when on\n(0.5 A through about 60 mOhm)."
+      }
+    ]
+  },
+  "netlist": "* Low-Side Switch (CSD17382F4)\n\nR1 1 2 24\nXM1 2 4 0 CSD17382F4\nV1 1 0 DC 12\nV2 3 0 PULSE(0 3.3 0 10n 10n 0.5m 1m)\nR2 4 3 100\nR3 4 0 100k\n\n* PSpice Model Editor - Version 16.2.0\n*$\n* CSD17382F4\n***********************************************************************\n*  (C) Copyright 2020 Texas Instruments Incorporated. All rights reserved.\n* TI Information - Selective Disclosure to Poly\n***********************************************************************\n***********************************************************************\n** This model is designed as an aid for customers of Texas Instruments.\n** TI and its licensors and suppliers make no warranties, either expressed\n** or implied, with respect to this model, including the warranties of\n** merchantability or fitness for a particular purpose. The model is\n** provided solely on an \"as is\" basis. The entire risk as to its quality\n** and performance is with the customer\n********************************************************************************\n*\n********************************************************************************\n*\n* Released by: Texas Instruments Inc.\n* Part: CSD17382F4\n* Date: 02/13/2020\n* Model Type: TRANSIENT\n* Simulator: PSPICE\n* Simulator Version: 16.2\n* EVM Order Number: \n* EVM Users Guide: \n* Datasheet: SLPS562A ? APRIL 2016 ? REVISED DECEMBER 2016\n* Model Version: Final 1.00\n*\n*****************************************************************************\n\n**********************************************************************\n**********************************************************************\n*                                                                    *\n* CSD17382F4   -  PSpice Model for use with OrCAD                    *\n*                                                                    *\n**********************************************************************\n**********************************************************************\n* Characteristics:\n*   Technology:   NCH 12/10\n*\n**********************************************************************\n* Model History:\n*   tr, 4/7/2016\n*    \n**********************************************************************\n* SUBCKT Definition:  1=D  2=G  3=S\n.SUBCKT CSD17382F4  1 2 3\n* PARAMETER (local) DEFINITIONS SECTION\n .param AAN13383=0.66\n .param AAN83325=1.58\n .PARAM ptrc1=2.75e-3\n .PARAM ptrc2=-01.00e-6\n .PARAM pwidthP={AAN13383/0.8*2}\n .PARAM pwidth={pwidthP*1e6}\n .PARAM perimP={2.1*pwidthP}\n .PARAM perim={perimP*1e6}\n****** MODEL SUBCIRCUIT BEGINS HERE     ******************************\nM1\t11\t5\t6\t6\tNMOS\tW={pwidthP} L=0.5u  PS={perimP} PD={perimP}\nRGG\t\t2\t22\t110\nRGG2\t22\t5\t110\n*cgs0\t5\t22\t1.60e-12\tic=0\nDDG1  \t1\t101\tDD area={AAN13383/AAN83325}\nDDG2  \t5\t101\tDD area={AAN13383/AAN83325}\nDBD\t\t3\t1\tDBD area={AAN13383/AAN83325}\nCBD0  \t1  \t3   3e-12\nRBD0  \t1  \t3   1e10\nRSP   \t6\t3\t0.15e-3\nRDD 1 11 54.00e-3 tc1={ptrc1} tc2={ptrc2}\nDESD1\t2\t30\tDDZ\nDESD2\t3\t30\tDDZ\n******************************************************************* \n.MODEL  NMOS   NMOS (\n* CONTROL PARAMETERS\n+ LEVEL  = 8             VERSION = 3.2         CAPMOD = 2\n* DC PARAMETERS\n+ NLX    = 1.74E-7       VBM    = -5           DVT0   = 2.2\n+ DVT1   = 0.53          DVT2   = -0.032       U0     = 400\n+ UA     = 8.0e-9        UB     = 0.0e-19      A0     = 0.9\n+ AGS    = 0.0           A1     = 0.0          A2     = 0.9\n+ LINT   = 0.055e-6      VOFF   = -0.30        NFACTOR= 1.7\n+ ETA0   = 0.005         ETAB   = -0.07        DSUB   = 1.4\n+ PCLM   = 3.00          PDIBLC1= 0.02         PDIBLC2= 0.004\n+ DROUT  = 0.90          PSCBE1 = 3.0e8        PSCBE2 = 1e-6\n+ PVAG   = 0.1           DELTA  = 0.0220       JS     = 0\n* AC AND CAPACITANCE PARAMETERS\n+ CGSO   = 1.00e-18\t\tCGDO   = 1e-18        CGBO   = 1e-18\n+ CJ     = 1e-18        CJSW   = 1e-18        CF     = 0\n* TEMPERATURE PARAMETERS\n+ TNOM   = 25            UTE    = -1.5         KT1    = -0.70\n+ KT1L   = 1.0e-15       KT2    = 0.022        UA1    = -01.00e-9\n+ UB1    = 5.0e-17      \n* PROCESS PARAMETERS\n+ TOX    = 2.50e-8       XJ     = 3e-7          NCH    = 1.250e17\n+ NSUB   = 1.0e16)\n******************************************************************* \n.MODEL  PMOSd   PMOS (   LEVEL  = 1\n+ TNOM   = 25            VTO    = -1.0          IS     = 6.0e-14\n+ TOX    = 3.0e-8        NSUB   = 2.0e17\t\tGAMMA  = 15\n+ CJ     = 1e-18         CJSW   = 1e-18\n+ CGSO   = 1e-18         CGDO   = 1e-18         CGBO   = 0  )\n*******************************************************************\n.MODEL DBD D (CJO=2.50e-10 VJ=0.5 M=0.5 TNOM=25\n+ FC=0.5 TT=2e-09 XTI=-1.0 BV=31.00\n+ IS=3.0e-11 N=1.07 RS=1.625e-2 TRS1=4.0e-3)\n*******************************************************************\n.MODEL DD  D (CJO=5.00e-010 VJ=0.40 M=0.70 IS=1e-13 RS=0.1 TNOM=25)\n*******************************************************************\n.MODEL DDZ D (CJO=1e-18 VJ=0.9 M=0.9 IS=1e-13 RS=1.0e+1 TNOM=25 bv=12.1)\n*******************************************************************\n*******************************************************************\n.ENDS CSD17382F4  \n*$\n.tran 1u 3m\n.end",
+  "savedAt": "2026-11-18T00:00:00.000Z"
+}

@@ -89,6 +89,15 @@
       "schematicFile": "/examples/mosfet-switches.json",
       "netlistFile": null,
       "previewImage": "/previewImage/mosfet-switches.png"
+    },
+    {
+      "id": "lowside-switch-csd17382f4",
+      "name": "Low-Side Switch (CSD17382F4)",
+      "description": "3.3 V logic pin switching a 0.5 A load with TI's CSD17382F4, using TI's own SPICE model",
+      "category": "switching",
+      "schematicFile": "/examples/lowside-switch-csd17382f4.json",
+      "netlistFile": null,
+      "previewImage": "/previewImage/lowside-switch-csd17382f4.png"
     }
   ]
 }

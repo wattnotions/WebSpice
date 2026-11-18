@@ -7,6 +7,7 @@
  */
 
 import type { SpiceModel } from '../schematic/types';
+import { SUBCIRCUIT_MODELS } from './subcircuits.generated';
 
 /** Model category for organization */
 export type ModelCategory = 'diode' | 'bjt' | 'mosfet' | 'jfet' | 'other';
@@ -128,6 +129,28 @@ export const ALL_MODELS: Record<string, LibraryModel> = {
 	...BJT_MODELS,
 	...MOSFET_MODELS
 };
+
+/**
+ * A vendor model that is a whole subcircuit (.SUBCKT ... .ENDS), not a single
+ * .model line. Imported from static/SpiceModels by scripts/import-spice-model.ts.
+ * Placed as an X instance; the body diode etc. are inside the subcircuit.
+ */
+export interface SubcircuitModel {
+	name: string;
+	kind: 'nmos' | 'pmos';
+	pins: string[];       // Our pin names (D/G/S) in .SUBCKT port order
+	description: string;
+	source: string;       // Original vendor file
+	text: string;         // ngspice-ready .SUBCKT text
+}
+
+export { SUBCIRCUIT_MODELS };
+
+/** Look up a vendor subcircuit model by name (case-insensitive) */
+export function findSubcircuit(name: string): SubcircuitModel | undefined {
+	const upper = name.toUpperCase();
+	return Object.values(SUBCIRCUIT_MODELS).find(m => m.name.toUpperCase() === upper);
+}
 
 /**
  * Look up a model by name (case-insensitive, checks aliases)

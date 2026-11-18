@@ -7,7 +7,7 @@ import type { Schematic, Component } from '../schematic/types';
 import type { GeneratedNetlist, SpiceComponent, PinConnection } from './types';
 import { COMPONENT_PREFIX, DEFAULT_VALUES, PIN_ORDER } from './types';
 import { analyzeConnectivity } from './connectivity';
-import { findModel, getModelDirective } from '../models';
+import { findModel, getModelDirective, findSubcircuit, type SubcircuitModel } from '../models';
 
 /** Expand parameter references like {CC} using the parameters map */
 function expandParameters(value: string, parameters: Record<string, string>): string {
@@ -136,10 +136,22 @@ export function generateNetlist(schematic: Schematic, title: string = 'Untitled 
 		pinToNet.set(key, net?.name || '?');
 	}
 
+	// Vendor subcircuits used by this schematic (their .SUBCKT text is added below)
+	const usedSubckts = new Map<string, SubcircuitModel>();
+
 	// Generate SPICE components (with parameter expansion)
 	for (const comp of schematic.components) {
 		// Skip ground - it's not a component, it defines node 0
 		if (comp.type === 'ground') continue;
+
+		// Vendor subcircuit model (e.g. TI's CSD17382F4): placed as an X instance,
+		// with its own body diode inside, so no extra diode is added
+		const subckt = subcircuitFor(comp);
+		if (subckt) {
+			result.components.push(subcircuitInstance(comp, subckt, pinToNet));
+			usedSubckts.set(subckt.name.toUpperCase(), subckt);
+			continue;
+		}
 
 		const spiceComp = componentToSpice(comp, pinToNet, parameters);
 		if (spiceComp) {
@@ -163,6 +175,7 @@ export function generateNetlist(schematic: Schematic, title: string = 'Untitled 
 	// Collect model names referenced by components (diodes, BJTs, MOSFETs)
 	const referencedModels = new Set<string>();
 	for (const comp of schematic.components) {
+		if (subcircuitFor(comp)) continue;  // Defined by its .SUBCKT, not a .model line
 		if (comp.type === 'diode' || comp.type === 'npn' || comp.type === 'pnp' || comp.type === 'nmos' || comp.type === 'pmos') {
 			const modelName = comp.attributes['Value'];
 			if (modelName) {
@@ -201,6 +214,11 @@ export function generateNetlist(schematic: Schematic, title: string = 'Untitled 
 				result.warnings.push(`Warning: Model "${modelName}" not found in library`);
 			}
 		}
+	}
+
+	// Vendor subcircuit definitions
+	for (const subckt of usedSubckts.values()) {
+		result.directives.push(subckt.text.trimEnd());
 	}
 
 	// Add simulation directive from schematic or use default
@@ -282,6 +300,34 @@ function componentToSpice(
 		name: instName,
 		nodes,
 		value
+	};
+}
+
+/** MOSFET types whose Value can name a vendor subcircuit model */
+const MOSFET_TYPES = new Set(['nmos', 'pmos', 'nmos_bd', 'pmos_bd']);
+
+/** The vendor subcircuit model a component uses, if its Value names one */
+function subcircuitFor(comp: Component): SubcircuitModel | undefined {
+	if (!MOSFET_TYPES.has(comp.type)) return undefined;
+	const value = comp.attributes['Value'];
+	return value ? findSubcircuit(value.trim()) : undefined;
+}
+
+/**
+ * X instance for a vendor subcircuit: "XM1 <nodes in .SUBCKT port order> NAME".
+ * The instance must start with X; the schematic name (M1) is kept after it.
+ */
+function subcircuitInstance(
+	comp: Component,
+	subckt: SubcircuitModel,
+	pinToNet: Map<string, string>
+): SpiceComponent {
+	const instName = comp.attributes['InstName'] || 'M?';
+	return {
+		prefix: 'X',
+		name: `X${instName}`,
+		nodes: subckt.pins.map(pin => pinToNet.get(`${comp.id}:${pin}`) ?? '?'),
+		value: subckt.name
 	};
 }
 

@@ -10,6 +10,9 @@ export {
 	ALL_MODELS,
 	findModel,
 	getModelsByCategory,
-	getModelDirective
+	getModelDirective,
+	type SubcircuitModel,
+	SUBCIRCUIT_MODELS,
+	findSubcircuit
 } from './component-library';
 
