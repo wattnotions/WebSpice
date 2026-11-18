@@ -26,7 +26,8 @@
 		drawNodeLabels as drawNodeLabelsUtil,
 		drawDirectives as drawDirectivesUtil,
 		drawComments as drawCommentsUtil,
-		findCommentAt as findCommentAtUtil
+		findCommentAt as findCommentAtUtil,
+		measureComment as measureCommentUtil
 	} from './canvas';
 
 	import {
@@ -56,7 +57,8 @@
 		oneditdirectives,
 		oneditcomment,
 		onmodechange,
-		stressScores = {}
+		stressScores = {},
+		fitRequest = 0
 	}: {
 		schematic: Schematic;
 		onprobe?: (event: ProbeEvent) => void;
@@ -68,7 +70,59 @@
 		onmodechange?: (mode: string) => void;
 		/** Ratings-check score per component id (0-10, 11 = over); colours parts and shows a badge */
 		stressScores?: Record<string, number>;
+		/** Bump this number to zoom the view so the whole circuit fills the canvas */
+		fitRequest?: number;
 	} = $props();
+
+	/**
+	 * Zoom and pan so the whole circuit (parts, wires, junctions, comments,
+	 * directives) fills the canvas, with a margin. An empty schematic just
+	 * resets the view.
+	 */
+	export function fitToContent() {
+		if (!canvas || !ctx || canvas.width === 0 || canvas.height === 0) return;
+		let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+		const grow = (x: number, y: number) => {
+			minX = Math.min(minX, x); minY = Math.min(minY, y);
+			maxX = Math.max(maxX, x); maxY = Math.max(maxY, y);
+		};
+		for (const comp of schematic.components) {
+			const def = COMPONENT_DEFS[comp.type];
+			const sideways = comp.rotation === 90 || comp.rotation === 270;
+			const hw = (sideways ? def.height : def.width) / 2;
+			const hh = (sideways ? def.width : def.height) / 2;
+			grow(comp.x - hw, comp.y - hh);
+			grow(comp.x + hw + 40, comp.y + hh);  // + room for the name/value labels on the right
+		}
+		for (const w of schematic.wires) { grow(w.x1, w.y1); grow(w.x2, w.y2); }
+		for (const j of schematic.junctions) grow(j.x, j.y);
+		for (const c of schematic.comments ?? []) {
+			const box = measureCommentUtil(ctx, c);
+			grow(box.x, box.y); grow(box.x + box.width, box.y + box.height);
+		}
+		for (const d of schematic.directives ?? []) {
+			if (d.x !== undefined && d.y !== undefined) { grow(d.x, d.y); grow(d.x + d.text.length * 8, d.y + 16); }
+		}
+		if (!Number.isFinite(minX)) {
+			dispatch({ type: 'RESET_VIEW', canvasWidth: canvas.width, canvasHeight: canvas.height });
+			return;
+		}
+		const margin = 30 * getDpr();
+		const w = Math.max(maxX - minX, 50), h = Math.max(maxY - minY, 50);
+		const scale = Math.max(0.1, Math.min(4, (canvas.width - 2 * margin) / w, (canvas.height - 2 * margin) / h));
+		dispatch({
+			type: 'SET_VIEW',
+			scale,
+			offsetX: canvas.width / 2 - ((minX + maxX) / 2) * scale,
+			offsetY: canvas.height / 2 - ((minY + maxY) / 2) * scale
+		});
+	}
+
+	// Fit when asked (e.g. an example or file was opened). Runs on the next frame so the
+	// canvas has its final size; not tracked, so later edits don't re-fit.
+	$effect(() => {
+		if (fitRequest > 0) requestAnimationFrame(() => fitToContent());
+	});
 
 	/** Turn the voltage probe tool on or off (used by the toolbar button) */
 	export function toggleProbeMode() {
@@ -821,8 +875,9 @@
 		}
 
 		// View controls
+		// F / Home: zoom to fit the whole circuit
 		if (e.key === 'Home' || (e.key === 'f' && modeState.type !== 'placing')) {
-			dispatch({ type: 'RESET_VIEW', canvasWidth: canvas.width, canvasHeight: canvas.height });
+			fitToContent();
 			return;
 		}
 		if (e.key === '+' || e.key === '=') {

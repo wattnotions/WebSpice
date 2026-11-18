@@ -5,7 +5,7 @@
 	import { TabbedWaveformViewer, type TraceData, type WaveformTab, getTraceColor, processAcResults } from '$lib/waveform';
 	import { NetlistEditor } from '$lib/editor';
 	import { SchematicCanvas, type Schematic, type Probe, type Component, type TextComment } from '$lib/schematic';
-	import { ResizablePanel, HelpModal, LandingPage, DirectiveModal, ComponentEditModal, CommentEditModal, MenuBar, IconButton, type Menu } from '$lib/components';
+	import { ResizablePanel, HelpModal, LandingPage, DirectiveModal, ComponentEditModal, CommentEditModal, MenuBar, IconButton, BottomDock, type Menu, type DockTab } from '$lib/components';
 	import { schematicToNetlist, generateNodeLabels, calculateComponentCurrent } from '$lib/netlist';
 	import { computeStress, scoreColor, scoreLabel, formatSI, type StressReport } from '$lib/netlist/stress';
 
@@ -36,25 +36,39 @@
 	let schematicMode = $state('select');
 
 	let netlistCollapsed = $state(true);  // Netlist panel starts collapsed; click ▶ to expand
-	let schematicCollapsed = $state(false);
-	let waveformCollapsed = $state(false);
 
-	// Calculate initial panel sizes based on viewport
-	// Schematic: 1/2 of total height, Waveform: 1/3 of total height, Info: 1/6 of total height
-	const toolbarHeight = 40;
-	const statusbarHeight = 24;
+	// Bottom dock (Waveform / Simulation Info): tucked away so the schematic gets the
+	// space; pops up with the arrow, a tab click, or when a probe adds a trace
+	let dockOpen = $state(false);
+	let dockTab = $state('waveform');
+	let dockHeight = $state(
+		typeof window === 'undefined' ? 300 : Math.round((window.innerHeight - 64) * 0.4)
+	);
+	const dockTabs: DockTab[] = $derived([
+		{
+			id: 'waveform',
+			label: 'Waveform',
+			badge: getTotalTraceCount() > 0
+				? { text: String(getTotalTraceCount()), color: '#9d9d9d', title: 'Traces plotted' }
+				: undefined
+		},
+		{
+			id: 'info',
+			label: 'Simulation Info',
+			badge: stressReport && stressReport.maxScore >= 0
+				? { text: String(stressReport.maxScore), color: scoreColor(stressReport.maxScore), title: 'Worst part ratings score (0 = lots of headroom, 10 = at the limit, 11 = over)' }
+				: undefined
+		}
+	]);
 
-	function getInitialSizes() {
-		if (typeof window === 'undefined') return { schematic: 400, waveform: 250, info: 100 };
-		const availableHeight = window.innerHeight - toolbarHeight - statusbarHeight;
-		// Schematic: 1/2, Waveform: 1/3, Info: 1/6
-		const schematicHeight = Math.round(availableHeight / 2);
-		const waveformHeight = Math.round(availableHeight / 3);
-		const infoHeight = Math.round(availableHeight / 6);
-		return { schematic: schematicHeight, waveform: waveformHeight, info: infoHeight };
+	/** Pop the dock up on the waveform tab (e.g. after probing) */
+	function showWaveform() {
+		dockTab = 'waveform';
+		dockOpen = true;
 	}
 
-	let initialSizes = $state(getInitialSizes());
+	// Ask the schematic to zoom to fit the circuit (bumped when a circuit is opened)
+	let fitRequest = $state(0);
 	let netlistInput = $state(`* Minimal RC Circuit Test
 R1 in out 1k
 C1 out 0 1u
@@ -103,6 +117,7 @@ Vin in 0 PULSE(0 5 0 1n 1n 0.5m 1m)
 			if (result.dataType === 'complex') {
 				// AC analysis - create magnitude and phase tabs
 				handleAcResults();
+				showWaveform();
 			} else {
 				// Transient analysis - extract time data
 				for (const data of result.data) {
@@ -119,9 +134,11 @@ Vin in 0 PULSE(0 5 0 1n 1n 0.5m 1m)
 				if (schematic.components.length === 0) {
 					// Netlist typed by hand (nothing to probe): show every signal
 					addAllSimulationTracesToActiveTab();
+					showWaveform();
 				} else if (probes.length > 0) {
 					// LTspice style: re-plot whatever was probed before this run
 					for (const probe of probes) addProbeTracesToActiveTab(probe);
+					showWaveform();
 				} else {
 					status += ' | Press P (or the probe button) and click a wire to plot it';
 				}
@@ -384,6 +401,7 @@ Vin in 0 PULSE(0 5 0 1n 1n 0.5m 1m)
 
 		if (simResult) {
 			addProbeTracesToActiveTab(newProbe);
+			showWaveform();
 			status = `Plotted ${label}`;
 		} else {
 			status = `Probe added: ${label} (it will be plotted when you run the simulation)`;
@@ -549,6 +567,7 @@ Vin in 0 PULSE(0 5 0 1n 1n 0.5m 1m)
 			// Clear probes and old ratings results
 			probes = [];
 			stressReport = null;
+			fitRequest++;
 
 			status = `Loaded: ${schematic.components.length} components, ${schematic.wires.length} wires`;
 			showLanding = false;
@@ -630,6 +649,7 @@ Vin in 0 PULSE(0 5 0 1n 1n 0.5m 1m)
 			}
 
 			showLanding = false;
+			fitRequest++;
 			status = `Loaded example: ${example.name}`;
 		} catch (err) {
 			status = `Failed to load example: ${err}`;
@@ -714,7 +734,7 @@ Vin in 0 PULSE(0 5 0 1n 1n 0.5m 1m)
 			</div>
 		</ResizablePanel>
 		<div class="right-panel">
-			<ResizablePanel title="Schematic" direction="vertical" initialSize={initialSizes.schematic} minSize={100} bind:collapsed={schematicCollapsed}>
+			<ResizablePanel title="Schematic" direction="vertical" fill>
 				{#snippet titleActions()}
 					<IconButton
 						icon="probe"
@@ -730,12 +750,12 @@ Vin in 0 PULSE(0 5 0 1n 1n 0.5m 1m)
 					</button>
 				{/snippet}
 				<div class="panel-fill dark">
-					<SchematicCanvas bind:this={schematicCanvas} bind:schematic {stressScores} onmodechange={(m) => schematicMode = m} onprobe={handleProbe} oneditcomponent={handleEditComponent} oneditdirectives={() => showDirectives = true} oneditcomment={handleEditComment} />
+					<SchematicCanvas bind:this={schematicCanvas} bind:schematic {stressScores} {fitRequest} onmodechange={(m) => schematicMode = m} onprobe={handleProbe} oneditcomponent={handleEditComponent} oneditdirectives={() => showDirectives = true} oneditcomment={handleEditComment} />
 				</div>
 			</ResizablePanel>
-			<div class="waveform-and-info">
-				<ResizablePanel title="Waveform" direction="vertical" initialSize={initialSizes.waveform} minSize={100} bind:collapsed={waveformCollapsed}>
-					{#snippet titleActions()}
+			<BottomDock tabs={dockTabs} bind:active={dockTab} bind:open={dockOpen} bind:height={dockHeight}>
+				{#snippet actions(tab)}
+					{#if tab === 'waveform'}
 						<IconButton
 							icon="reset"
 							label="Clear plot"
@@ -743,20 +763,21 @@ Vin in 0 PULSE(0 5 0 1n 1n 0.5m 1m)
 							onclick={clearPlot}
 							disabled={probes.length === 0 && getTotalTraceCount() === 0 && waveformTabs.length === 1}
 						/>
-					{/snippet}
-					<div class="panel-fill dark">
-						<TabbedWaveformViewer
-							bind:tabs={waveformTabs}
-							bind:activeTabId={activeTabId}
-							{timeData}
-							ondeletetrace={handleDeleteTrace}
-						/>
-					</div>
-				</ResizablePanel>
-				{#if simInitInfo || simResult}
-					<div class="info-panel" style="height: {initialSizes.info}px">
-						<h3>Simulation Info</h3>
-						<div class="result-info">
+					{/if}
+				{/snippet}
+				{#snippet children(tab)}
+					{#if tab === 'waveform'}
+						<div class="panel-fill dark">
+							<TabbedWaveformViewer
+								bind:tabs={waveformTabs}
+								bind:activeTabId={activeTabId}
+								{timeData}
+								ondeletetrace={handleDeleteTrace}
+							/>
+						</div>
+					{:else}
+						<div class="info-panel">
+							<div class="result-info">
 							{#if stressReport && stressReport.parts.length > 0}
 								<div class="ratings">
 									<div class="ratings-title">
@@ -799,9 +820,10 @@ Vin in 0 PULSE(0 5 0 1n 1n 0.5m 1m)
 								<p><strong>Points:</strong> {simResult.numPoints}</p>
 							{/if}
 						</div>
-					</div>
-				{/if}
-			</div>
+						</div>
+					{/if}
+				{/snippet}
+			</BottomDock>
 		</div>
 	</main>
 	<footer class="statusbar">
@@ -939,13 +961,6 @@ Vin in 0 PULSE(0 5 0 1n 1n 0.5m 1m)
 		overflow: hidden;
 	}
 
-	.waveform-and-info {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		overflow: hidden;
-	}
-
 	.panel-fill {
 		width: 100%;
 		height: 100%;
@@ -958,18 +973,10 @@ Vin in 0 PULSE(0 5 0 1n 1n 0.5m 1m)
 	}
 
 	.info-panel {
+		flex: 1;
+		min-height: 0;
 		background: var(--bg-secondary);
-		border-top: 1px solid var(--border-primary);
-		flex-shrink: 0;
 		overflow: auto;
-	}
-
-	.info-panel h3 {
-		padding: var(--spacing-sm) var(--spacing-md);
-		margin: 0;
-		font-size: var(--font-size-sm);
-		background: var(--bg-tertiary);
-		border-bottom: 1px solid var(--border-primary);
 	}
 
 	.result-info {

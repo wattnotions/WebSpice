@@ -94,7 +94,7 @@
 							<tr><td><kbd>Click + Drag</kbd></td><td>Pan view</td></tr>
 							<tr><td><kbd>Middle Click + Drag</kbd></td><td>Pan view</td></tr>
 							<tr><td><kbd>Ctrl+G</kbd> or <kbd>Shift+G</kbd></td><td>Toggle grid visibility</td></tr>
-							<tr><td><kbd>F</kbd> or <kbd>Home</kbd></td><td>Reset view to origin</td></tr>
+							<tr><td><kbd>F</kbd> or <kbd>Home</kbd></td><td>Zoom to fit the whole circuit</td></tr>
 							<tr><td><kbd>+</kbd> / <kbd>=</kbd></td><td>Zoom in</td></tr>
 							<tr><td><kbd>-</kbd> / <kbd>_</kbd></td><td>Zoom out</td></tr>
 						</tbody>

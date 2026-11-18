@@ -34,6 +34,7 @@ export type EditorAction =
 	| { type: 'PAN'; dx: number; dy: number }
 	| { type: 'ZOOM'; factor: number; center: Point }
 	| { type: 'RESET_VIEW'; canvasWidth: number; canvasHeight: number }
+	| { type: 'SET_VIEW'; offsetX: number; offsetY: number; scale: number }
 	| { type: 'TOGGLE_GRID' }
 
 	// Mouse position update
@@ -87,7 +88,7 @@ export type EditorAction =
  * Type guard helpers for action categories
  */
 export function isViewAction(action: EditorAction): boolean {
-	return ['PAN', 'ZOOM', 'RESET_VIEW', 'TOGGLE_GRID'].includes(action.type);
+	return ['PAN', 'ZOOM', 'RESET_VIEW', 'SET_VIEW', 'TOGGLE_GRID'].includes(action.type);
 }
 
 export function isSelectionAction(action: EditorAction): boolean {

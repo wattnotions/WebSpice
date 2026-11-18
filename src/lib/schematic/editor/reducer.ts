@@ -92,6 +92,15 @@ export function editorReducer(
 				mutations: []
 			};
 
+		case 'SET_VIEW':
+			return {
+				state: {
+					...state,
+					view: { offsetX: action.offsetX, offsetY: action.offsetY, scale: action.scale }
+				},
+				mutations: []
+			};
+
 		case 'TOGGLE_GRID':
 			return {
 				state: {

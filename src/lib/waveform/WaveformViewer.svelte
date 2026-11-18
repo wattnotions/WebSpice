@@ -39,12 +39,20 @@
 
 	const getDpr = () => window.devicePixelRatio || 1;
 
+	// Follow the canvas's own size (e.g. when the bottom dock is resized), not just the window
+	let resizeObserver: ResizeObserver | null = null;
+
 	onMount(() => {
 		initWebGL();
 		window.addEventListener('resize', handleResize);
+		resizeObserver = new ResizeObserver(() => handleResize());
+		if (canvas) resizeObserver.observe(canvas);
 	});
 
-	onDestroy(() => window.removeEventListener('resize', handleResize));
+	onDestroy(() => {
+		window.removeEventListener('resize', handleResize);
+		resizeObserver?.disconnect();
+	});
 
 	function initWebGL() {
 		if (!canvas) return;
@@ -67,6 +75,7 @@
 		if (!canvas || !wglp) return;
 		const d = getDpr();
 		const w = canvas.clientWidth * d, h = canvas.clientHeight * d;
+		if (w === 0 || h === 0) return;  // Hidden or not laid out yet
 		canvas.width = w; canvas.height = h;
 		if (gridCanvas) { gridCanvas.width = w; gridCanvas.height = h; }
 		if (overlayCanvas) { overlayCanvas.width = w; overlayCanvas.height = h; }

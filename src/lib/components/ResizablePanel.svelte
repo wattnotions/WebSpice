@@ -7,6 +7,7 @@
 		initialSize = 300,
 		minSize = 100,
 		collapsed = $bindable(false),
+		fill = false,
 		children,
 		titleActions,
 		headerActions
@@ -16,6 +17,7 @@
 		initialSize?: number;
 		minSize?: number;
 		collapsed?: boolean;
+		fill?: boolean;           // Take all remaining space (no fixed size, no collapse or resize)
 		children: Snippet;
 		titleActions?: Snippet;   // Small buttons placed right after the title
 		headerActions?: Snippet;  // Buttons placed at the far right of the header
@@ -54,7 +56,9 @@
 	}
 
 	const sizeStyle = $derived(
-		collapsed
+		fill
+			? ''
+			: collapsed
 			? direction === 'horizontal' ? 'width: 24px' : 'height: 24px'
 			: direction === 'horizontal' ? `width: ${size}px` : `height: ${size}px`
 	);
@@ -65,16 +69,19 @@
 	class:horizontal={direction === 'horizontal'}
 	class:vertical={direction === 'vertical'}
 	class:collapsed
+	class:fill
 	style={sizeStyle}
 >
 	<div class="panel-header">
-		<button class="collapse-btn" onclick={toggleCollapse} title={collapsed ? 'Expand' : 'Collapse'}>
-			{#if direction === 'horizontal'}
-				{collapsed ? '▶' : '◀'}
-			{:else}
-				{collapsed ? '▼' : '▲'}
-			{/if}
-		</button>
+		{#if !fill}
+			<button class="collapse-btn" onclick={toggleCollapse} title={collapsed ? 'Expand' : 'Collapse'}>
+				{#if direction === 'horizontal'}
+					{collapsed ? '▶' : '◀'}
+				{:else}
+					{collapsed ? '▼' : '▲'}
+				{/if}
+			</button>
+		{/if}
 		{#if !collapsed && title}
 			<span class="panel-title">{title}</span>
 		{/if}
@@ -93,6 +100,7 @@
 		<div class="panel-content">
 			{@render children()}
 		</div>
+		{#if !fill}
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div
 			class="resize-handle"
@@ -100,6 +108,7 @@
 			class:vertical={direction === 'vertical'}
 			onmousedown={handleMouseDown}
 		></div>
+		{/if}
 	{/if}
 </div>
 
@@ -120,6 +129,12 @@
 	.resizable-panel.vertical {
 		flex-direction: column;
 		border-bottom: 1px solid var(--border-primary);
+	}
+
+	.resizable-panel.fill {
+		flex: 1;
+		min-height: 0;
+		border-bottom: none;
 	}
 
 	.resizable-panel.collapsed {
