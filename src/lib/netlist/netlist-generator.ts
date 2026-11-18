@@ -148,7 +148,7 @@ export function generateNetlist(schematic: Schematic, title: string = 'Untitled 
 		// with its own body diode inside, so no extra diode is added
 		const subckt = subcircuitFor(comp);
 		if (subckt) {
-			result.components.push(subcircuitInstance(comp, subckt, pinToNet));
+			result.components.push(...subcircuitInstance(comp, subckt, pinToNet));
 			usedSubckts.set(subckt.name.toUpperCase(), subckt);
 			continue;
 		}
@@ -314,21 +314,49 @@ function subcircuitFor(comp: Component): SubcircuitModel | undefined {
 }
 
 /**
+ * Name of the 0 V drain-current sense source added for parts with ratings.
+ * The simulator reports its current as i(vsense_<inst>), lowercase.
+ */
+export function drainSenseSource(instName: string): string {
+	return `VSENSE_${instName}`;
+}
+
+/**
  * X instance for a vendor subcircuit: "XM1 <nodes in .SUBCKT port order> NAME".
  * The instance must start with X; the schematic name (M1) is kept after it.
+ *
+ * Parts with datasheet ratings also get a 0 V source in series with the drain
+ * ("VSENSE_M1 <drain> M1_d DC 0") so the simulator reports the drain current;
+ * this engine can't .save currents inside a subcircuit. Positive current flows
+ * into the drain.
  */
 function subcircuitInstance(
 	comp: Component,
 	subckt: SubcircuitModel,
 	pinToNet: Map<string, string>
-): SpiceComponent {
+): SpiceComponent[] {
 	const instName = comp.attributes['InstName'] || 'M?';
-	return {
-		prefix: 'X',
-		name: `X${instName}`,
-		nodes: subckt.pins.map(pin => pinToNet.get(`${comp.id}:${pin}`) ?? '?'),
-		value: subckt.name
-	};
+	const net = (pin: string) => pinToNet.get(`${comp.id}:${pin}`) ?? '?';
+
+	if (!subckt.datasheet) {
+		return [{ prefix: 'X', name: `X${instName}`, nodes: subckt.pins.map(net), value: subckt.name }];
+	}
+
+	const senseNode = `${instName}_d`;
+	return [
+		{
+			prefix: 'X',
+			name: `X${instName}`,
+			nodes: subckt.pins.map(pin => (pin === 'D' ? senseNode : net(pin))),
+			value: subckt.name
+		},
+		{
+			prefix: 'V',
+			name: drainSenseSource(instName),
+			nodes: [net('D'), senseNode],
+			value: 'DC 0'
+		}
+	];
 }
 
 /** Default SPICE model for the explicit body diode of nmos_bd / pmos_bd */

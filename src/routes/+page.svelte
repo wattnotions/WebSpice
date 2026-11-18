@@ -7,6 +7,7 @@
 	import { SchematicCanvas, type Schematic, type Probe, type Component, type TextComment } from '$lib/schematic';
 	import { ResizablePanel, HelpModal, LandingPage, DirectiveModal, ComponentEditModal, CommentEditModal, MenuBar, IconButton, type Menu } from '$lib/components';
 	import { schematicToNetlist, generateNodeLabels, calculateComponentCurrent } from '$lib/netlist';
+	import { computeStress, scoreColor, scoreLabel, formatSI, type StressReport } from '$lib/netlist/stress';
 
 	let status = $state('Not initialized');
 	let simResult = $state<SimulationResult | null>(null);
@@ -14,6 +15,12 @@
 	let timeData = $state<number[]>([]);
 	let schematic = $state<Schematic>({ components: [], wires: [], junctions: [], directives: [], parameters: {}, models: [], comments: [] });
 	let probes = $state<Probe[]>([]);
+
+	// Ratings check after each run: per-part scores, 0 (lots of headroom) .. 10 (at the limit), 11 = over
+	let stressReport = $state<StressReport | null>(null);
+	const stressScores = $derived(
+		Object.fromEntries((stressReport?.parts ?? []).map(p => [p.componentId, p.score]))
+	);
 	let showHelp = $state(false);
 	let showLanding = $state(true);
 	let showDirectives = $state(false);
@@ -84,6 +91,7 @@ Vin in 0 PULSE(0 5 0 1n 1n 0.5m 1m)
 
 		status = 'Running simulation...';
 		simResult = null;
+		stressReport = null;
 		// Clear all tabs' traces
 		waveformTabs = waveformTabs.map(tab => ({ ...tab, traces: [] }));
 		timeData = [];
@@ -103,6 +111,11 @@ Vin in 0 PULSE(0 5 0 1n 1n 0.5m 1m)
 						break;
 					}
 				}
+				// Check every part that has datasheet ratings against what the run did to it
+				if (schematic.components.length > 0) {
+					stressReport = computeStress(schematic, result.data as RealDataType[]);
+				}
+
 				if (schematic.components.length === 0) {
 					// Netlist typed by hand (nothing to probe): show every signal
 					addAllSimulationTracesToActiveTab();
@@ -111,6 +124,9 @@ Vin in 0 PULSE(0 5 0 1n 1n 0.5m 1m)
 					for (const probe of probes) addProbeTracesToActiveTab(probe);
 				} else {
 					status += ' | Press P (or the probe button) and click a wire to plot it';
+				}
+				if (stressReport && stressReport.parts.length > 0) {
+					status += ` | ${stressSummary(stressReport)}`;
 				}
 			}
 		} catch (err) {
@@ -311,6 +327,18 @@ Vin in 0 PULSE(0 5 0 1n 1n 0.5m 1m)
 				? { ...tab, traces: tab.traces.filter(t => t.id !== traceId) }
 				: tab
 		);
+	}
+
+	/** One-line ratings summary for the status bar */
+	function stressSummary(report: StressReport): string {
+		const over = report.parts.flatMap(p => p.items.filter(i => i.score >= 11).map(i => ({ p, i })));
+		if (over.length > 0) {
+			return 'WARNING over rating: ' + over
+				.map(({ p, i }) => `${p.instName} ${i.label} ${formatSI(i.value, i.unit)} > ${formatSI(i.limit, i.unit)}`)
+				.join(', ');
+		}
+		const worst = report.parts.reduce((a, b) => (b.score > a.score ? b : a));
+		return `Ratings: worst ${worst.instName} ${worst.score}/10 (${worst.worst.label} ${Math.round(worst.worst.ratio * 100)}% of max)`;
 	}
 
 	/**
@@ -518,8 +546,9 @@ Vin in 0 PULSE(0 5 0 1n 1n 0.5m 1m)
 				netlistInput = data.netlist;
 			}
 
-			// Clear probes
+			// Clear probes and old ratings results
 			probes = [];
+			stressReport = null;
 
 			status = `Loaded: ${schematic.components.length} components, ${schematic.wires.length} wires`;
 			showLanding = false;
@@ -545,6 +574,7 @@ Vin in 0 PULSE(0 5 0 1n 1n 0.5m 1m)
 		schematic = { components: [], wires: [], junctions: [], directives: [], parameters: {}, models: [], comments: [] };
 		probes = [];
 		simResult = null;
+		stressReport = null;
 		timeData = [];
 		waveformTabs = [{ id: 'default', name: 'Plot 1', traces: [] }];
 		activeTabId = 'default';
@@ -569,6 +599,9 @@ Vin in 0 PULSE(0 5 0 1n 1n 0.5m 1m)
 				throw new Error(`Failed to load schematic: ${schematicResponse.statusText}`);
 			}
 			const schematicData = await schematicResponse.json();
+
+			// Results from a previous circuit don't apply to this one
+			stressReport = null;
 
 			// Update state with defaults for directive fields
 			schematic = {
@@ -697,7 +730,7 @@ Vin in 0 PULSE(0 5 0 1n 1n 0.5m 1m)
 					</button>
 				{/snippet}
 				<div class="panel-fill dark">
-					<SchematicCanvas bind:this={schematicCanvas} bind:schematic onmodechange={(m) => schematicMode = m} onprobe={handleProbe} oneditcomponent={handleEditComponent} oneditdirectives={() => showDirectives = true} oneditcomment={handleEditComment} />
+					<SchematicCanvas bind:this={schematicCanvas} bind:schematic {stressScores} onmodechange={(m) => schematicMode = m} onprobe={handleProbe} oneditcomponent={handleEditComponent} oneditdirectives={() => showDirectives = true} oneditcomment={handleEditComment} />
 				</div>
 			</ResizablePanel>
 			<div class="waveform-and-info">
@@ -724,6 +757,40 @@ Vin in 0 PULSE(0 5 0 1n 1n 0.5m 1m)
 					<div class="info-panel" style="height: {initialSizes.info}px">
 						<h3>Simulation Info</h3>
 						<div class="result-info">
+							{#if stressReport && stressReport.parts.length > 0}
+								<div class="ratings">
+									<div class="ratings-title">
+										Part ratings check
+										<span class="ratings-key">0 = lots of headroom, 10 = at the limit, 11 = over</span>
+									</div>
+									<table>
+										<tbody>
+											{#each stressReport.parts as part}
+												<tr class="part-row">
+													<td><span class="score-badge" style="background: {scoreColor(part.score)}">{part.score}</span></td>
+													<td colspan="4">
+														<strong>{part.instName}</strong> {part.part}: {scoreLabel(part.score)}
+														{#if part.tjEstimate !== undefined}
+															<span class="tj">(junction about {Math.round(part.tjEstimate)} °C of {part.tjMax} °C max, at 25 °C ambient)</span>
+														{/if}
+													</td>
+												</tr>
+												{#each part.items as item}
+													<tr title={item.note}>
+														<td><span class="score-badge small" style="background: {scoreColor(item.score)}">{item.score}</span></td>
+														<td>{item.label}</td>
+														<td class="num">{formatSI(item.value, item.unit)} / {formatSI(item.limit, item.unit)}</td>
+														<td class="num">{Math.round(item.ratio * 100)}%</td>
+														<td class="bar-cell">
+															<div class="bar"><div class="bar-fill" style="width: {Math.min(100, item.ratio * 100)}%; background: {scoreColor(item.score)}"></div></div>
+														</td>
+													</tr>
+												{/each}
+											{/each}
+										</tbody>
+									</table>
+								</div>
+							{/if}
 							{#if simInitInfo}
 								<pre class="init-info">{simInitInfo}</pre>
 							{/if}
@@ -914,6 +981,85 @@ Vin in 0 PULSE(0 5 0 1n 1n 0.5m 1m)
 		margin: var(--spacing-xs) 0;
 		font-size: var(--font-size-xs);
 		color: var(--text-secondary);
+	}
+
+	.ratings {
+		margin-bottom: var(--spacing-sm);
+		font-size: var(--font-size-sm);
+		color: var(--text-primary);
+	}
+
+	.ratings-title {
+		font-weight: 600;
+		margin-bottom: var(--spacing-xs);
+	}
+
+	.ratings-key {
+		font-weight: normal;
+		color: var(--text-secondary);
+		margin-left: var(--spacing-sm);
+		font-size: var(--font-size-xs);
+	}
+
+	.ratings table {
+		border-collapse: collapse;
+		width: 100%;
+		max-width: 640px;
+	}
+
+	.ratings td {
+		padding: 2px 6px;
+		vertical-align: middle;
+	}
+
+	.ratings .part-row td {
+		padding-top: 6px;
+	}
+
+	.ratings .num {
+		text-align: right;
+		font-family: var(--font-mono);
+		white-space: nowrap;
+	}
+
+	.ratings .tj {
+		color: var(--text-secondary);
+		margin-left: var(--spacing-xs);
+	}
+
+	.score-badge {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 22px;
+		height: 22px;
+		padding: 0 4px;
+		border-radius: 11px;
+		color: #000;
+		font-weight: 700;
+		font-size: 12px;
+		box-sizing: border-box;
+	}
+
+	.score-badge.small {
+		min-width: 18px;
+		height: 18px;
+		font-size: 11px;
+	}
+
+	.bar-cell {
+		width: 40%;
+	}
+
+	.bar {
+		height: 8px;
+		background: var(--bg-tertiary);
+		border-radius: 4px;
+		overflow: hidden;
+	}
+
+	.bar-fill {
+		height: 100%;
 	}
 
 	.result-info .init-info {

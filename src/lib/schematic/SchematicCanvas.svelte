@@ -5,6 +5,7 @@
 	import type { ComponentType } from './types';
 	import { renderComponent } from './component-renderer';
 	import { COMPONENT_DEFS, getComponentByShortcut } from './component-defs';
+	import { scoreColor } from '$lib/netlist/stress';
 
 	import {
 		screenToSchematic as screenToSchematicUtil,
@@ -54,7 +55,8 @@
 		oneditcomponent,
 		oneditdirectives,
 		oneditcomment,
-		onmodechange
+		onmodechange,
+		stressScores = {}
 	}: {
 		schematic: Schematic;
 		onprobe?: (event: ProbeEvent) => void;
@@ -64,6 +66,8 @@
 		oneditcomment?: (comment: TextComment, isNew: boolean) => void;
 		/** Called when the editor mode changes ('select', 'probe', 'wire', ...) */
 		onmodechange?: (mode: string) => void;
+		/** Ratings-check score per component id (0-10, 11 = over); colours parts and shows a badge */
+		stressScores?: Record<string, number>;
 	} = $props();
 
 	/** Turn the voltage probe tool on or off (used by the toolbar button) */
@@ -292,10 +296,36 @@
 	) {
 		if (!ctx) return;
 
-		// Draw all placed components
+		// Draw all placed components (rated parts are coloured by their ratings score)
 		for (const comp of schematic.components) {
 			const isSelected = selectedIds.has(comp.id);
-			renderComponent(ctx, comp, scale, isSelected, false);
+			const score = stressScores[comp.id];
+			renderComponent(ctx, comp, scale, isSelected, false, score !== undefined ? scoreColor(score) : undefined);
+		}
+
+		// Score badges: a small numbered circle at each rated part's top-right corner
+		for (const comp of schematic.components) {
+			const score = stressScores[comp.id];
+			if (score === undefined) continue;
+			const def = COMPONENT_DEFS[comp.type];
+			const sideways = comp.rotation === 90 || comp.rotation === 270;
+			const halfW = (sideways ? def.height : def.width) / 2;
+			const halfH = (sideways ? def.width : def.height) / 2;
+			const r = 9 / scale;
+			const bx = comp.x + halfW + r * 0.4;
+			const by = comp.y - halfH - r * 0.4;
+			ctx.beginPath();
+			ctx.arc(bx, by, r, 0, Math.PI * 2);
+			ctx.fillStyle = scoreColor(score);
+			ctx.fill();
+			ctx.lineWidth = 1.5 / scale;
+			ctx.strokeStyle = '#000000';
+			ctx.stroke();
+			ctx.fillStyle = '#000000';
+			ctx.font = `bold ${(score >= 10 ? 9 : 11) / scale}px sans-serif`;
+			ctx.textAlign = 'center';
+			ctx.textBaseline = 'middle';
+			ctx.fillText(String(score), bx, by + 0.5 / scale);
 		}
 
 		// Draw ghost component if placing
@@ -807,7 +837,8 @@
 
 	// Re-render when schematic changes
 	$effect(() => {
-		if (schematic && ctx) {
+		// Reading stressScores here makes new ratings-check results redraw the canvas too
+		if (schematic && stressScores && ctx) {
 			render();
 		}
 	});

@@ -22,7 +22,8 @@ export function renderComponent(
 	comp: Component,
 	scale: number,
 	isSelected: boolean = false,
-	isGhost: boolean = false  // For placement preview
+	isGhost: boolean = false,  // For placement preview
+	colorOverride?: string     // e.g. ratings-check colour after a run
 ): void {
 	const def = COMPONENT_DEFS[comp.type];
 	if (!def) return;
@@ -41,7 +42,7 @@ export function renderComponent(
 	}
 
 	// Set styles
-	const color = isSelected ? COLORS.componentSelected : COLORS.component;
+	const color = isSelected ? COLORS.componentSelected : (colorOverride ?? COLORS.component);
 	ctx.strokeStyle = isGhost ? `${color}80` : color;
 	ctx.fillStyle = isGhost ? `${color}80` : color;
 	ctx.lineWidth = 2 / scale;
